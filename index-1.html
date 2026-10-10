@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png">
+<title>Stock & Crédits</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#14181f;--mut:#6b7280;--ac:#2563eb;--bd:#e5e7eb;--red:#dc2626;--grn:#16a34a}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#1a1d24;--tx:#eef0f4;--mut:#9aa3b2;--bd:#2a2f3a;--ac:#6b96ff}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top,0px) 0 calc(76px + env(safe-area-inset-bottom,0px))}
+header{padding:14px 16px 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}h1{font-size:20px;margin:0}
+.st{font-size:12px;color:var(--mut)}
+.kpi{display:flex;gap:8px;padding:8px 16px}
+.kpi div{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;min-width:0}
+.kpi b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kpi span{font-size:11px;color:var(--mut)}
+main,#auth{padding:6px 16px;max-width:720px;margin:auto}
+input,select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;margin:4px 0 8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mut{color:var(--mut);font-size:13px}.red{color:var(--red)}.grn{color:var(--grn)}
+button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}
+button.d{background:var(--red)}button.s{padding:6px 11px}
+.badge{border-radius:20px;padding:3px 10px;font-size:13px;background:var(--bd)}.badge.low{background:var(--red);color:#fff}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px}nav button.on{color:var(--ac);font-weight:600}
+.fab{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));border-radius:28px;padding:14px 20px;box-shadow:0 4px 14px #0004}
+.ov{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;justify-content:center;z-index:9}
+.md{background:var(--bg);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:16px;max-height:90%;overflow:auto}
+label{font-size:13px;color:var(--mut)}
+.out main,.out .kpi,.out nav,.out .fab,.out #hb{display:none}body:not(.out) #auth{display:none}
+#rc{display:none}
+@media print{body>*:not(#rc){display:none!important}body{background:#fff;padding:0}#rc{display:block;font:15px/1.6 monospace;white-space:pre-wrap;padding:24px;color:#000;background:#fff}}
+</style></head><body class="out">
+<header><div><h1>📱 Stock & Crédits</h1><div class="st" id="who"></div></div><div id="hb" class="row"><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">Déconnexion</button></div></header>
+<section id="auth"><div class="card"><b>Connexion</b><br>
+<input id="em" type="email" placeholder="E-mail" autocomplete="username"><input id="pw" type="password" placeholder="Mot de passe" autocomplete="current-password">
+<div class="red" id="err" style="min-height:20px"></div>
+<div class="row"><button onclick="doAuth(false)">Se connecter</button><button class="g" onclick="doAuth(true)">Créer un compte</button></div></div></section>
+<div class="kpi"><div><b id="k1">0</b><span>Valeur du stock</span></div><div><b id="k2">0</b><span>Crédits dus</span></div><div><b id="k3">0</b><span>Clients en retard</span></div></div>
+<main id="app"></main>
+<button class="fab" id="fab">+ Pièce</button>
+<nav><button id="t-stock" class="on">📦 Stock</button><button id="t-clients">👥 Clients</button><button id="t-hist">🕘 Historique</button></nav>
+<div id="ov"></div><div id="rc"></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {initializeFirestore,persistentLocalCache,collection,doc,addDoc,setDoc,updateDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({
+  apiKey:"AIzaSyAJH32AsvqSLGyt3mOBy4M4Gs1Su_GU1ec",
+  authDomain:"gestion-4d0d6.firebaseapp.com",
+  projectId:"gestion-4d0d6",
+  storageBucket:"gestion-4d0d6.firebasestorage.app",
+  messagingSenderId:"887131852188",
+  appId:"1:887131852188:web:ba144999b0346a7ba8cc59"
+});
+const auth=getAuth(app);
+let fs;try{fs=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){fs=initializeFirestore(app,{})}
+const U=()=>auth.currentUser.uid;
+window.FB={
+  login:(e,p)=>signInWithEmailAndPassword(auth,e,p),
+  signup:(e,p)=>createUserWithEmailAndPassword(auth,e,p),
+  logout:()=>signOut(auth),
+  sub:(c,cb)=>onSnapshot(collection(fs,'users',U(),c),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>console.error(e)),
+  add:(c,d)=>addDoc(collection(fs,'users',U(),c),d),
+  set:(c,id,d)=>setDoc(doc(fs,'users',U(),c,id),d,{merge:true}),
+  upd:(c,id,d)=>updateDoc(doc(fs,'users',U(),c,id),d),
+  del:(c,id)=>deleteDoc(doc(fs,'users',U(),c,id))
+};
+onAuthStateChanged(auth,u=>window.onUser(u));
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round((+n||0)*100)/100);
+const num=v=>parseFloat(String(v).replace(',','.'))||0;
+const F=()=>window.FB;
+let uid=null,unsubs=[],parts=[],clients=[],txs=[],trash=[],S={},tab='stock',cur=null,q='';
+const money=n=>fmt(n)+(S.dev?' '+S.dev:'');
+const DL=()=>S.delay??30;
+const bal=id=>txs.filter(t=>t.clientId===id).reduce((s,t)=>s+(t.type==='credit'?t.amount:-t.amount),0);
+const balAt=(id,d)=>txs.filter(t=>t.clientId===id&&t.date<=d).reduce((s,t)=>s+(t.type==='credit'?t.amount:-t.amount),0);
+function daysLate(id){
+  if(bal(id)<=0)return null;
+  const l=txs.filter(t=>t.clientId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  let paid=l.filter(t=>t.type!=='credit').reduce((s,t)=>s+t.amount,0);
+  for(const t of l){if(t.type!=='credit')continue;if(paid>=t.amount)paid-=t.amount;else return Math.floor((Date.now()-new Date(t.date))/864e5)}
+  return null;
+}
+const late=()=>clients.filter(c=>{const d=daysLate(c.id);return d!=null&&d>DL()});
+const run=p=>Promise.resolve(p).catch(e=>alert('Erreur : '+(e&&e.message||e)));
+
+window.onUser=u=>{
+  unsubs.forEach(f=>f());unsubs=[];parts=[];clients=[];txs=[];trash=[];S={};cur=null;uid=u?u.uid:null;
+  document.body.classList.toggle('out',!uid);
+  $('#who').textContent=u?u.email:'';
+  if(u)unsubs=[F().sub('parts',v=>{parts=v;render()}),F().sub('clients',v=>{clients=v;render()}),F().sub('txs',v=>{txs=v;render()}),F().sub('settings',v=>{S=v.find(x=>x.id==='main')||{};render()}),F().sub('trash',v=>{trash=v;render()})];
+  render();
+};
+const MSG={'auth/invalid-credential':'E-mail ou mot de passe incorrect','auth/email-already-in-use':'Ce compte existe déjà','auth/weak-password':'Mot de passe trop court (6 caractères min.)','auth/invalid-email':'E-mail invalide','auth/network-request-failed':'Pas de connexion internet','auth/operation-not-allowed':"E-mail/Mot de passe non activé dans Firebase",'auth/unauthorized-domain':"Domaine non autorisé dans Firebase Authentication"};
+async function doAuth(sign){
+  $('#err').textContent='';
+  if(!F()){$('#err').textContent='Chargement… réessayez dans un instant';return}
+  try{await(sign?F().signup:F().login)($('#em').value.trim(),$('#pw').value)}
+  catch(x){$('#err').textContent=MSG[x.code]||x.code||x.message}
+}
+
+function render(){
+  if(!uid)return;
+  const L=late();
+  $('#k1').textContent=money(parts.reduce((s,p)=>s+(p.qty||0)*(p.buy||0),0));
+  $('#k2').textContent=money(clients.reduce((s,c)=>s+Math.max(0,bal(c.id)),0));
+  $('#k3').textContent=L.length;
+  $('#t-stock').className=tab==='stock'?'on':'';$('#t-clients').className=tab==='clients'?'on':'';$('#t-hist').className=tab==='hist'?'on':'';$('#fab').style.display=(tab==='hist'&&!cur)?'none':'';
+  $('#fab').textContent=cur?'+ Opération':tab==='stock'?'+ Pièce':'+ Client';
+  const lb=L.length?`<div class="card" style="border-color:var(--red)" onclick="tab='clients';cur=null;render()">⚠️ <b>${L.length}</b> client(s) en retard de plus de ${DL()} jours</div>`:'';
+  const a=$('#app');
+  if(cur){const c=clients.find(x=>x.id===cur);if(!c){cur=null;return render()}
+    const b=bal(c.id),dl=daysLate(c.id),l=txs.filter(t=>t.clientId===c.id).sort((x,y)=>y.date.localeCompare(x.date));
+    a.innerHTML=`<button class="g s" onclick="cur=null;render()">← Retour</button>
+    <div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||'')}</div></div><b class="${b>0?'red':'grn'}">${money(b)}</b></div>
+    ${dl!=null&&dl>DL()?`<div class="red mut" style="margin-top:6px">⏰ Crédit impayé depuis ${dl} jours</div>`:''}
+    <div class="row" style="margin-top:10px"><button onclick="creditForm()">Nouveau crédit</button><button class="g" onclick="payForm()">Paiement</button><button class="g s" onclick="clientForm('${c.id}')">✏️</button></div>
+    ${c.phone?`<div class="row" style="margin-top:8px"><button class="g s" onclick="location.href='tel:${esc(c.phone)}'">📞 Appeler</button>${b>0?`<button class="g s" onclick="remind('${c.id}')">💬 Envoyer un rappel</button>`:''}</div>`:''}</div>
+    ${l.map(t=>`<div class="card row"><div><b class="${t.type==='credit'?'red':'grn'}">${t.type==='credit'?'Crédit':'Paiement'} ${money(t.amount)}</b><div class="mut">${esc(t.note||'')} · ${new Date(t.date).toLocaleDateString('fr-FR')}</div></div><span><button class="g s" onclick="receipt('${t.id}')">🧾</button> <button class="g s" onclick="delTx('${t.id}')">🗑</button></span></div>`).join('')||'<p class="mut">Aucune opération.</p>'}`;
+  }else if(tab==='stock'){
+    const l=parts.filter(p=>(p.name+' '+(p.model||'')+' '+(p.cat||'')).toLowerCase().includes(q)).sort((x,y)=>x.name.localeCompare(y.name));
+    a.innerHTML=lb+`<input id="q" placeholder="🔍 Rechercher une pièce…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render();const i=$('#q');i.focus();i.setSelectionRange(99,99)">`+
+    (l.map(p=>`<div class="card"><div class="row"><div><b>${esc(p.name)}</b><div class="mut">${esc(p.cat||'')} ${esc(p.model||'')}</div></div><span class="badge ${p.qty<=(p.min||0)?'low':''}">Qté ${p.qty||0}</span></div>
+    <div class="row" style="margin-top:8px"><span class="mut">Achat ${money(p.buy)} · Vente ${money(p.sell)}</span><span><button class="g s" onclick="adj('${p.id}',-1)">−1</button> <button class="g s" onclick="adj('${p.id}',1)">+1</button> <button class="g s" onclick="partForm('${p.id}')">✏️</button></span></div></div>`).join('')||'<p class="mut">Aucune pièce. Ajoutez-en avec le bouton +.</p>');
+  }else if(tab==='hist'){
+    const ic={part:'📦 Pièce',client:'👤 Client',tx:'💰 Opération'};
+    a.innerHTML=`<p class="mut">Éléments supprimés (pièces, clients, opérations). Vous pouvez les restaurer.</p>`+([...trash].sort((x,y)=>y.date.localeCompare(x.date)).map(e=>`<div class="card"><b>${ic[e.kind]||''}</b> · ${esc(e.label)}${e.kind==='client'&&e.data.txs&&e.data.txs.length?` <span class="mut">(+${e.data.txs.length} opération(s))</span>`:''}<div class="mut">Supprimé le ${new Date(e.date).toLocaleString('fr-FR')}</div><div class="row" style="margin-top:8px"><button class="g s" onclick="restore('${e.id}')">↩️ Restaurer</button><button class="g s" onclick="purge('${e.id}')">Effacer définitivement</button></div></div>`).join('')||'<p class="mut">Aucune suppression.</p>');
+  }else{
+    a.innerHTML=lb+([...clients].sort((x,y)=>bal(y.id)-bal(x.id)).map(c=>{const b=bal(c.id),d=daysLate(c.id);return `<div class="card row" onclick="cur='${c.id}';render()"><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||'')}</div></div><span style="text-align:right"><b class="${b>0?'red':'grn'}">${money(b)}</b>${d!=null&&d>DL()?`<div><span class="badge low">⏰ ${d} j</span></div>`:''}</span></div>`}).join('')||'<p class="mut">Aucun client.</p>');
+  }
+}
+$('#t-stock').onclick=()=>{tab='stock';cur=null;render()};
+$('#t-clients').onclick=()=>{tab='clients';cur=null;render()};
+$('#t-hist').onclick=()=>{tab='hist';cur=null;render()};
+$('#fab').onclick=()=>cur?creditForm():tab==='stock'?partForm():clientForm();
+
+function modal(title,fields,ok,extra=''){
+  $('#ov').innerHTML=`<div class="ov"><div class="md"><b>${title}</b><div style="margin-top:8px">${fields.map(f=>`<label>${f.l}</label>`+(f.o?`<select id="f_${f.k}">${f.o}</select>`:`<input id="f_${f.k}" type="${f.t||'text'}" ${f.t==='number'?'step="any" inputmode="decimal"':''} value="${esc(f.v??'')}">`)).join('')}</div>
+  <div class="row"><button class="g" onclick="closeM()">Annuler</button><span>${extra}<button id="ok">Enregistrer</button></span></div></div></div>`;
+  $('#ok').onclick=()=>{const o={};fields.forEach(f=>o[f.k]=$('#f_'+f.k).value);ok(o);closeM()};
+}
+function closeM(){$('#ov').innerHTML=''}
+
+function settingsForm(){
+  modal('Paramètres',[{k:'shop',l:'Nom de la boutique (affiché sur les reçus)',v:S.shop},{k:'dev',l:'Devise (ex : DA, DT, €)',v:S.dev},{k:'delay',l:'Crédit en retard après (jours)',t:'number',v:DL()}],
+  o=>{run(F().set('settings','main',{shop:o.shop.trim(),dev:o.dev.trim(),delay:num(o.delay)||30}))},
+  '<button class="g s" onclick="exportXlsx()">📊 Excel</button> ');
+}
+
+async function saveFile(blob,name){
+  const f=new File([blob],name,{type:blob.type});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+function exportXlsx(){
+  if(!window.XLSX){alert("Export indisponible : connexion internet requise.");return}
+  const wb=XLSX.utils.book_new(),add=(n,r)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),n);
+  add('Stock',[['Nom','Catégorie','Modèle','Quantité','Prix achat','Prix vente','Valeur stock'],...parts.map(p=>[p.name,p.cat||'',p.model||'',p.qty||0,p.buy||0,p.sell||0,(p.qty||0)*(p.buy||0)])]);
+  add('Clients',[['Nom','Téléphone','Solde dû','Jours de retard'],...clients.map(c=>[c.name,c.phone||'',bal(c.id),daysLate(c.id)??''])]);
+  add('Opérations',[['Date','Client','Type','Montant','Note'],...[...txs].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>[new Date(t.date).toLocaleDateString('fr-FR'),(clients.find(c=>c.id===t.clientId)||{}).name||'',t.type==='credit'?'Crédit':'Paiement',t.amount,t.note||''])]);
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  saveFile(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`stock-credits-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function rcText(t){
+  const c=clients.find(x=>x.id===t.clientId)||{};
+  return `${S.shop||'REÇU'}\n${'-'.repeat(24)}\n${new Date(t.date).toLocaleString('fr-FR')}\nClient : ${c.name||''}\n${t.type==='credit'?'Crédit':'Paiement reçu'} : ${money(t.amount)}\n${t.note?'Détail : '+t.note+'\n':''}Solde restant : ${money(balAt(t.clientId,t.date))}\n${'-'.repeat(24)}\nMerci !`;
+}
+function receipt(id){
+  const t=txs.find(x=>x.id===id);if(!t)return;window._rc=rcText(t);
+  $('#ov').innerHTML=`<div class="ov"><div class="md"><b>🧾 Reçu</b><pre style="white-space:pre-wrap;font:14px/1.5 monospace;margin:10px 0">${esc(_rc)}</pre><div class="row"><button class="g" onclick="closeM()">Fermer</button><span><button class="g" onclick="shareText()">Partager</button> <button onclick="printRc()">Imprimer</button></span></div></div></div>`;
+}
+function shareText(){navigator.share?navigator.share({text:_rc}).catch(()=>{}):window.open('https://wa.me/?text='+encodeURIComponent(_rc))}
+function printRc(){$('#rc').textContent=_rc;window.print()}
+function remind(id){
+  const c=clients.find(x=>x.id===id);
+  window._rc=`Bonjour ${c.name}, petit rappel : votre solde est de ${money(bal(id))}${S.shop?' chez '+S.shop:''}. Merci de régulariser dès que possible.`;
+  shareText();
+}
+
+function partForm(id){
+  const p=parts.find(x=>x.id===id)||{};
+  modal(id?'Modifier la pièce':'Nouvelle pièce',[
+    {k:'name',l:'Nom (ex : Écran LCD)',v:p.name},{k:'cat',l:'Catégorie',v:p.cat},{k:'model',l:'Modèle compatible',v:p.model},
+    {k:'qty',l:'Quantité en stock',t:'number',v:p.qty??0},{k:'buy',l:"Prix d'achat",t:'number',v:p.buy??0},
+    {k:'sell',l:'Prix de vente',t:'number',v:p.sell??0},{k:'min',l:'Seuil d’alerte (stock bas)',t:'number',v:p.min??1}],
+  o=>{if(!o.name.trim())return;const d={name:o.name.trim(),cat:o.cat,model:o.model,qty:num(o.qty),buy:num(o.buy),sell:num(o.sell),min:num(o.min)};
+    run(id?F().upd('parts',id,d):F().add('parts',d))},
+  id?`<button class="d s" onclick="if(confirm('Supprimer cette pièce ?')){delPart('${id}')}">Suppr.</button> `:'');
+}
+function adj(id,n){const p=parts.find(x=>x.id===id);run(F().upd('parts',id,{qty:Math.max(0,(p.qty||0)+n)}))}
+
+function clientForm(id){
+  const c=clients.find(x=>x.id===id)||{};
+  modal(id?'Modifier le client':'Nouveau client',[{k:'name',l:'Nom',v:c.name},{k:'phone',l:'Téléphone',t:'tel',v:c.phone}],
+  o=>{if(!o.name.trim())return;const d={name:o.name.trim(),phone:o.phone};run(id?F().upd('clients',id,d):F().add('clients',d))},
+  id?`<button class="d s" onclick="delClient('${id}')">Suppr.</button> `:'');
+}
+function delClient(id){if(!confirm('Supprimer ce client et son historique ?'))return;
+  const c=clients.find(x=>x.id===id);if(!c)return;const l=txs.filter(t=>t.clientId===id);
+  logDel('client',c.name,{id,doc:strip(c),txs:l.map(t=>({id:t.id,doc:strip(t)}))});
+  l.forEach(t=>run(F().del('txs',t.id)));run(F().del('clients',id));cur=null;closeM();render()}
+
+function creditForm(){
+  const opts='<option value="">— Aucune (montant libre) —</option>'+parts.filter(p=>p.qty>0).map(p=>`<option value="${p.id}">${esc(p.name)} ${esc(p.model||'')} (qté ${p.qty})</option>`).join('');
+  modal('Nouveau crédit',[{k:'part',l:'Pièce vendue (retire du stock)',o:opts},{k:'n',l:'Quantité',t:'number',v:1},{k:'amount',l:'Montant (auto si pièce choisie)',t:'number'},{k:'note',l:'Note'}],
+  o=>{const p=parts.find(x=>x.id===o.part),n=num(o.n)||1;let amt=num(o.amount);if(!amt&&p)amt=(p.sell||0)*n;if(!amt)return;
+    run(F().add('txs',{clientId:cur,type:'credit',amount:amt,note:o.note||(p?`${p.name} ×${n}`:''),date:new Date().toISOString()}));
+    if(p)run(F().upd('parts',p.id,{qty:Math.max(0,(p.qty||0)-n)}))});
+}
+function payForm(){
+  modal('Paiement reçu',[{k:'amount',l:'Montant',t:'number'},{k:'note',l:'Note'}],
+  o=>{const a=num(o.amount);if(!a)return;run(F().add('txs',{clientId:cur,type:'payment',amount:a,note:o.note,date:new Date().toISOString()}))});
+}
+function delTx(id){
+  const t=txs.find(x=>x.id===id);if(!t||!confirm('Supprimer cette opération ?'))return;
+  const c=clients.find(x=>x.id===t.clientId)||{};
+  logDel('tx',`${t.type==='credit'?'Crédit':'Paiement'} ${money(t.amount)} — ${c.name||''}`,{id,doc:strip(t)});
+  run(F().del('txs',id));
+}
+const strip=o=>{const {id,...r}=o;return r};
+function logDel(kind,label,data){return run(F().add('trash',{kind,label,data,date:new Date().toISOString()}))}
+function delPart(id){const p=parts.find(x=>x.id===id);if(!p)return;logDel('part',p.name,{id,doc:strip(p)});run(F().del('parts',id));closeM()}
+function restore(tid){
+  const e=trash.find(x=>x.id===tid);if(!e)return;const d=e.data;
+  if(e.kind==='part')run(F().set('parts',d.id,d.doc));
+  else if(e.kind==='client'){run(F().set('clients',d.id,d.doc));(d.txs||[]).forEach(t=>run(F().set('txs',t.id,t.doc)))}
+  else{if(!clients.some(c=>c.id===d.doc.clientId)){alert("Restaurez d'abord le client de cette opération.");return}run(F().set('txs',d.id,d.doc))}
+  run(F().del('trash',tid));
+}
+function purge(tid){if(confirm('Effacer définitivement ? Cette action est irréversible.'))run(F().del('trash',tid))}
+</script></body></html>
