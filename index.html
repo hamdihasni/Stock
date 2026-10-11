@@ -14,7 +14,7 @@
 body{background:var(--bg);color:var(--tx);font-family:var(--ff,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif);font-size:calc(var(--fs,1)*16px);line-height:1.4;padding:env(safe-area-inset-top,0px) 0 calc(76px + env(safe-area-inset-bottom,0px))}
 header{padding:14px 16px 6px}h1{font-size:clamp(19px,6.4vw,28px);margin:0;padding:10px 0;border:3px solid var(--hb,#000);border-radius:12px;background:linear-gradient(90deg,#f6d46f,#ee8f89,#82a8e6);color:#111;text-align:center;white-space:nowrap;overflow:hidden;font-weight:700;font-family:'Comic Sans MS','Comic Sans','Comic Neue',cursive}.hrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
 .st{font-size:calc(var(--fs,1)*12px);color:var(--mut)}
-.kpi{display:flex;gap:8px;padding:8px 16px}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px}
 .kpi div{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;min-width:0}
 .kpi b{display:block;font-size:calc(var(--fs,1)*16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kpi span{font-size:calc(var(--fs,1)*11px);color:var(--mut)}
 main,#auth{padding:6px 16px;max-width:720px;margin:auto}
@@ -46,7 +46,7 @@ radial-gradient(circle at 24% 92%,rgba(241,199,91,.34) 0 34px,transparent 35px),
 radial-gradient(circle at 80% 95%,rgba(111,155,224,.28) 0 64px,transparent 65px),
 radial-gradient(circle at 50% 55%,rgba(111,155,224,.07) 0 90px,transparent 91px)}
 .card,.kpi div{backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(31,41,55,.06)}
-.kpi div:nth-child(1){border-top:4px solid var(--blu)}.kpi div:nth-child(2){border-top:4px solid var(--yel)}.kpi div:nth-child(3){border-top:4px solid var(--rd)}
+.kpi div:nth-child(1){border-top:4px solid var(--blu)}.kpi div:nth-child(2){border-top:4px solid var(--grn)}.kpi div:nth-child(3){border-top:4px solid var(--yel)}.kpi div:nth-child(4){border-top:4px solid var(--rd)}.kpi span{display:block}
 button.fab{background:var(--rd)}
 nav{backdrop-filter:blur(8px)}
 @media print{body::before{display:none}}
@@ -73,7 +73,7 @@ nav{backdrop-filter:blur(8px)}
 <input id="em" type="email" placeholder="📧 E-mail" autocomplete="username"><input id="pw" type="password" placeholder="🔑 Mot de passe" autocomplete="current-password">
 <div class="red" id="err" style="min-height:20px"></div>
 <div class="row"><button onclick="doAuth(false)">🔓 Se connecter</button><button class="g" onclick="doAuth(true)">🆕 Créer un compte</button></div></div></section>
-<div class="kpi"><div><b id="k1">0</b><span>📦 Valeur du stock</span></div><div><b id="k2">0</b><span>💳 Crédits dus</span></div><div><b id="k3">0</b><span id="k3l">Clients en retard</span></div></div>
+<div class="kpi"><div><b id="k1">0</b><span>📦 Valeur du stock</span></div><div><b id="k4">0</b><span id="k4l">🛒 Total ventes</span><span id="k4s"></span></div><div><b id="k2">0</b><span>💳 Crédits dus</span></div><div><b id="k3">0</b><span id="k3l">Clients en retard</span></div></div>
 <main id="app"></main>
 <button class="fab" id="fab">➕ Pièce</button>
 <nav><button id="t-stock" class="on">📦 Stock</button><button id="t-clients">👥 Clients</button><button id="t-hist">🕘 Historique</button></nav>
@@ -163,6 +163,8 @@ function render(){
   const L=late();
   $('#k1').textContent=money(parts.reduce((s,p)=>s+(p.qty||0)*(p.buy||0),0));
   $('#k2').textContent=money(clients.reduce((s,c)=>s+Math.max(0,bal(c.id)),0));
+  const sl=txs.filter(t=>t.type==='credit'),sv=sl.reduce((a,t)=>a+t.amount,0),rv=txs.filter(t=>t.type!=='credit').reduce((a,t)=>a+t.amount,0),pc=sl.reduce((a,t)=>a+(t.qty||0),0);
+  $('#k4').textContent=money(sv);$('#k4s').textContent=`💵 Encaissé ${money(rv)} · 🔧 ${fmt(pc)} pièce(s)`;
   $('#k3').textContent=L.length;$('#k3l').innerHTML=SIG+' Clients en retard';
   const tkTxt=L.length?[...L].sort((a,b)=>daysLate(b.id)-daysLate(a.id)).map(c=>`${esc(c.name)} (${daysLate(c.id)} j · ${money(bal(c.id))})`).join('   •   '):'';
   if(tkTxt!==window._tkt){window._tkt=tkTxt;const t=$('#tkin');t.innerHTML=tkTxt?`${SIG} <b>Clients en retard :</b> ${tkTxt} ${SIG}`:'';t.style.animationDuration=Math.max(14,tkTxt.length*.22)+'s'}
@@ -307,7 +309,7 @@ function creditForm(){
   const opts='<option value="">— Aucune (montant libre) —</option>'+parts.filter(p=>p.qty>0).map(p=>`<option value="${p.id}">${esc(p.name)} ${esc(p.model||'')} (qté ${p.qty})</option>`).join('');
   modal('Nouveau crédit',[{k:'part',l:'🔧 Pièce vendue (retire du stock)',o:opts},{k:'n',l:'🔢 Quantité',t:'number',v:1},{k:'amount',l:'💵 Montant (auto si pièce choisie)',t:'number'},{k:'note',l:'📝 Note'}],
   o=>{const p=parts.find(x=>x.id===o.part),n=num(o.n)||1;let amt=num(o.amount);if(!amt&&p)amt=(p.sell||0)*n;if(!amt)return;
-    run(F().add('txs',{clientId:cur,type:'credit',amount:amt,note:o.note||(p?`${p.name} ×${n}`:''),date:new Date().toISOString()}));
+    run(F().add('txs',{clientId:cur,type:'credit',amount:amt,partId:p?p.id:'',qty:p?n:0,note:o.note||(p?`${p.name} ×${n}`:''),date:new Date().toISOString()}));
     if(p)run(F().upd('parts',p.id,{qty:Math.max(0,(p.qty||0)-n)}))});
 }
 function payForm(){
