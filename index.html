@@ -263,8 +263,8 @@ function exportXlsx(){
 }
 
 function rcText(t){
-  const c=clients.find(x=>x.id===t.clientId)||{};
-  return `${S.shop||'REÇU'}\n${'-'.repeat(24)}\n${new Date(t.date).toLocaleString('fr-FR')}\nClient : ${c.name||''}\n${t.type==='credit'?'Crédit':'Paiement reçu'} : ${money(t.amount)}\n${txDesc(t)?'Détail : '+txDesc(t)+'\n':''}Solde restant : ${money(balAt(t.clientId,t.date))}\n${'-'.repeat(24)}\nMerci !`;
+  const c=clients.find(x=>x.id===t.clientId)||{},rest=balAt(t.clientId,t.date),ln='-'.repeat(24);
+  return `${S.shop||'REÇU'}\n${ln}\n📅 ${new Date(t.date).toLocaleString('fr-FR')}\n👤 Client : ${c.name||''}\n${t.type==='credit'?'💳 Crédit':'💵 Paiement reçu'} : ${money(t.amount)}\n${txDesc(t)?'🔧 Détail : '+txDesc(t)+'\n':''}💰 Solde restant : ${money(rest)}\n${ln}\n${rest>0?'Merci de régulariser dès que possible.':'Merci !'}`;
 }
 function receipt(id){
   const t=txs.find(x=>x.id===id);if(!t)return;window._rc=rcText(t);
