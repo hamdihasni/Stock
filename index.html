@@ -97,7 +97,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round((+n||0)*100)/100);
 const num=v=>parseFloat(String(v).replace(',','.'))||0;
 const F=()=>window.FB;
-let uid=null,unsubs=[],parts=[],clients=[],txs=[],trash=[],S={},tab='stock',cur=null,q='',br='';
+let uid=null,unsubs=[],parts=[],clients=[],txs=[],trash=[],S={},tab='stock',cur=null,q='',cq='',br='';
 const BRANDS=['Galaxy','Oppo','Redmi','Infinix','Huawei'];
 const isBr=(p,b)=>b===''||(b==='Autre'?!BRANDS.includes(p.brand):p.brand===b);
 const money=n=>fmt(n)+(S.dev?' '+S.dev:'');
@@ -157,7 +157,7 @@ function render(){
     const ic={part:'📦 Pièce',client:'👤 Client',tx:'💰 Opération'};
     a.innerHTML=`<p class="mut">Éléments supprimés (pièces, clients, opérations). Vous pouvez les restaurer.</p>`+([...trash].sort((x,y)=>y.date.localeCompare(x.date)).map(e=>`<div class="card"><b>${ic[e.kind]||''}</b> · ${esc(e.label)}${e.kind==='client'&&e.data.txs&&e.data.txs.length?` <span class="mut">(+${e.data.txs.length} opération(s))</span>`:''}<div class="mut">Supprimé le ${new Date(e.date).toLocaleString('fr-FR')}</div><div class="row" style="margin-top:8px"><button class="g s" onclick="restore('${e.id}')">↩️ Restaurer</button><button class="g s" onclick="purge('${e.id}')">Effacer définitivement</button></div></div>`).join('')||'<p class="mut">Aucune suppression.</p>');
   }else{
-    a.innerHTML=lb+([...clients].sort((x,y)=>bal(y.id)-bal(x.id)).map(c=>{const b=bal(c.id),d=daysLate(c.id);return `<div class="card row" onclick="cur='${c.id}';render()"><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||'')}</div></div><span style="text-align:right"><b class="${b>0?'red':'grn'}">${money(b)}</b>${d!=null&&d>DL()?`<div><span class="badge low">⏰ ${d} j</span></div>`:''}</span></div>`}).join('')||'<p class="mut">Aucun client.</p>');
+    a.innerHTML=lb+`<input id="cq" placeholder="🔍 Rechercher un client (nom ou téléphone)…" value="${esc(cq)}" oninput="cq=this.value.toLowerCase();render();const i=$('#cq');i.focus();i.setSelectionRange(99,99)">`+([...clients].filter(c=>((c.name||'')+' '+(c.phone||'')).toLowerCase().includes(cq)).sort((x,y)=>bal(y.id)-bal(x.id)).map(c=>{const b=bal(c.id),d=daysLate(c.id);return `<div class="card row" onclick="cur='${c.id}';render()"><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||'')}</div></div><span style="text-align:right"><b class="${b>0?'red':'grn'}">${money(b)}</b>${d!=null&&d>DL()?`<div><span class="badge low">⏰ ${d} j</span></div>`:''}</span></div>`}).join('')||'<p class="mut">Aucun client.</p>');
   }
 }
 $('#t-stock').onclick=()=>{tab='stock';cur=null;render()};
