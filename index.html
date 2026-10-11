@@ -176,13 +176,16 @@ function render(){
   const lb='';
   const a=$('#app');
   if(cur){const c=clients.find(x=>x.id===cur);if(!c){cur=null;return render()}
+    const bought={};txs.filter(t=>t.clientId===c.id&&t.type==='credit').forEach(t=>(t.items||[]).forEach(i=>bought[i.name]=(bought[i.name]||0)+i.qty));
+    const bl=Object.entries(bought).map(([n,q])=>`${esc(n)} ×${q}`).join(' · ');
     const b=bal(c.id),dl=daysLate(c.id),l=txs.filter(t=>t.clientId===c.id).sort((x,y)=>y.date.localeCompare(x.date));
     a.innerHTML=`<button class="g s" onclick="cur=null;render()">← Retour</button>
     <div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||'')}</div></div><b class="${b>0?'red':'grn'}">${money(b)}</b></div>
     ${dl!=null&&dl>DLc(c)?`<div class="red mut" style="margin-top:6px">${SIG} Crédit impayé depuis ${dl} jours (délai : ${DLc(c)} j)</div>`:''}
+    ${bl?`<div class="mut" style="margin-top:6px">🛒 Pièces achetées : ${bl}</div>`:''}
     <div class="row" style="margin-top:10px"><button onclick="creditForm()">💳 Nouveau crédit</button><button class="g" onclick="payForm()">💵 Paiement</button><button class="g s" onclick="clientForm('${c.id}')">✏️</button></div>
     ${c.phone?`<div class="row" style="margin-top:8px"><button class="g s" onclick="location.href='tel:${esc(c.phone)}'">📞 Appeler</button>${b>0?`<button class="g s" onclick="remind('${c.id}')">💬 Envoyer un rappel</button>`:''}</div>`:''}</div>
-    ${l.map(t=>`<div class="card row"><div><b class="${t.type==='credit'?'red':'grn'}">${t.type==='credit'?'Crédit':'Paiement'} ${money(t.amount)}</b><div class="mut">${esc(t.note||'')} · ${new Date(t.date).toLocaleDateString('fr-FR')}</div></div><span><button class="g s" onclick="receipt('${t.id}')">🧾</button> <button class="g s" onclick="delTx('${t.id}')">🗑</button></span></div>`).join('')||'<p class="mut">Aucune opération.</p>'}`;
+    ${l.map(t=>`<div class="card row"><div><b class="${t.type==='credit'?'red':'grn'}">${t.type==='credit'?'Crédit':'Paiement'} ${money(t.amount)}</b><div class="mut">${esc(txDesc(t))} · ${new Date(t.date).toLocaleDateString('fr-FR')}</div></div><span><button class="g s" onclick="receipt('${t.id}')">🧾</button> <button class="g s" onclick="delTx('${t.id}')">🗑</button></span></div>`).join('')||'<p class="mut">Aucune opération.</p>'}`;
   }else if(tab==='stock'){
     const chips=`<div class="chips">${['',...BRANDS,'Autre'].map(b=>`<button class="chip ${br===b?'on':''}" onclick="br='${b}';render()">${b===''?'🗂️ Tous':b==='Autre'?'🔧 Autre':'📱 '+b} ${parts.filter(p=>isBr(p,b)).length}</button>`).join('')}</div>`;
     const l=parts.filter(p=>isBr(p,br)&&(p.name+' '+(p.model||'')+' '+(p.cat||'')+' '+(p.brand||'')).toLowerCase().includes(q)).sort((x,y)=>x.name.localeCompare(y.name));
@@ -245,7 +248,7 @@ function exportXlsx(){
   const wb=XLSX.utils.book_new(),add=(n,r)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),n);
   add('Stock',[['Marque','Nom','Catégorie','Modèle','Quantité','Prix achat','Prix vente','Valeur stock'],...parts.map(p=>[p.brand||'',p.name,p.cat||'',p.model||'',p.qty||0,p.buy||0,p.sell||0,(p.qty||0)*(p.buy||0)])]);
   add('Clients',[['Nom','Téléphone','Solde dû','Jours impayés','Délai accordé (j)','En retard'],...clients.map(c=>[c.name,c.phone||'',bal(c.id),daysLate(c.id)??'',DLc(c),isLate(c)?'Oui':'Non'])]);
-  add('Opérations',[['Date','Client','Type','Montant','Note'],...[...txs].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>[new Date(t.date).toLocaleDateString('fr-FR'),(clients.find(c=>c.id===t.clientId)||{}).name||'',t.type==='credit'?'Crédit':'Paiement',t.amount,t.note||''])]);
+  add('Opérations',[['Date','Client','Type','Montant','Note'],...[...txs].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>[new Date(t.date).toLocaleDateString('fr-FR'),(clients.find(c=>c.id===t.clientId)||{}).name||'',t.type==='credit'?'Crédit':'Paiement',t.amount,txDesc(t)])]);
   add('Ventes (−1)',[['Date','Pièce','Marque','Quantité','Prix unitaire'],...[...sales].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>[new Date(t.date).toLocaleString('fr-FR'),t.name||'',t.brand||'',t.qty||1,t.price||0])]);
   const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   saveFile(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`stock-credits-${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -253,7 +256,7 @@ function exportXlsx(){
 
 function rcText(t){
   const c=clients.find(x=>x.id===t.clientId)||{};
-  return `${S.shop||'REÇU'}\n${'-'.repeat(24)}\n${new Date(t.date).toLocaleString('fr-FR')}\nClient : ${c.name||''}\n${t.type==='credit'?'Crédit':'Paiement reçu'} : ${money(t.amount)}\n${t.note?'Détail : '+t.note+'\n':''}Solde restant : ${money(balAt(t.clientId,t.date))}\n${'-'.repeat(24)}\nMerci !`;
+  return `${S.shop||'REÇU'}\n${'-'.repeat(24)}\n${new Date(t.date).toLocaleString('fr-FR')}\nClient : ${c.name||''}\n${t.type==='credit'?'Crédit':'Paiement reçu'} : ${money(t.amount)}\n${txDesc(t)?'Détail : '+txDesc(t)+'\n':''}Solde restant : ${money(balAt(t.clientId,t.date))}\n${'-'.repeat(24)}\nMerci !`;
 }
 function receipt(id){
   const t=txs.find(x=>x.id===id);if(!t)return;window._rc=rcText(t);
@@ -324,12 +327,38 @@ function delClient(id){if(!confirm('Supprimer ce client et son historique ?'))re
   logDel('client',c.name,{id,doc:strip(c),txs:l.map(t=>({id:t.id,doc:strip(t)}))});
   l.forEach(t=>run(F().del('txs',t.id)));run(F().del('clients',id));cur=null;closeM();render()}
 
+let CR={sel:{},q:'',manual:false};
+function txDesc(t){return [(t.items||[]).map(i=>`${i.name} ×${i.qty}`).join(', '),t.note].filter(Boolean).join(' — ')}
+function crList(){
+  return parts.filter(p=>p.qty>0&&(p.name+' '+(p.model||'')+' '+(p.brand||'')+' '+(p.cat||'')).toLowerCase().includes(CR.q)).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--bd)"><div><b>${esc(p.name)}</b><div class="mut">${esc(p.brand||'')} ${esc(p.model||'')} · ${money(p.sell)} · stock ${p.qty}</div></div><span style="white-space:nowrap"><button class="g s" onclick="crAdj('${p.id}',-1)">−</button> <b>${CR.sel[p.id]||0}</b> <button class="g s" onclick="crAdj('${p.id}',1)">+</button></span></div>`).join('')||'<p class="mut">Aucune pièce en stock.</p>';
+}
+function crTotals(){const it=parts.filter(p=>CR.sel[p.id]>0);return{n:it.reduce((a,p)=>a+CR.sel[p.id],0),t:it.reduce((a,p)=>a+CR.sel[p.id]*(p.sell||0),0)}}
+function crRefresh(){
+  $('#crl').innerHTML=crList();const T=crTotals();
+  $('#crt').textContent=`🛒 ${T.n} pièce(s) choisie(s) · total ${money(T.t)}`;
+  if(!CR.manual)$('#cra').value=T.t||'';
+}
+function crAdj(id,d){const p=parts.find(x=>x.id===id);if(!p)return;CR.sel[id]=Math.max(0,Math.min(p.qty||0,(CR.sel[id]||0)+d));crRefresh()}
 function creditForm(){
-  const opts='<option value="">— Aucune (montant libre) —</option>'+parts.filter(p=>p.qty>0).map(p=>`<option value="${p.id}">${esc(p.name)} ${esc(p.model||'')} (qté ${p.qty})</option>`).join('');
-  modal('Nouveau crédit',[{k:'part',l:'🔧 Pièce vendue (retire du stock)',o:opts},{k:'n',l:'🔢 Quantité',t:'number',v:1},{k:'amount',l:'💵 Montant (auto si pièce choisie)',t:'number'},{k:'note',l:'📝 Note'}],
-  o=>{const p=parts.find(x=>x.id===o.part),n=num(o.n)||1;let amt=num(o.amount);if(!amt&&p)amt=(p.sell||0)*n;if(!amt)return;
-    run(F().add('txs',{clientId:cur,type:'credit',amount:amt,partId:p?p.id:'',qty:p?n:0,note:o.note||(p?`${p.name} ×${n}`:''),date:new Date().toISOString()}));
-    if(p)run(F().upd('parts',p.id,{qty:Math.max(0,(p.qty||0)-n)}))});
+  CR={sel:{},q:'',manual:false};
+  $('#ov').innerHTML=`<div class="ov"><div class="md"><b>💳 Nouveau crédit</b>
+  <label>🔍 Pièces achetées (choisies dans le stock)</label>
+  <input id="crq" placeholder="Chercher : nom, marque, modèle…" oninput="CR.q=this.value.toLowerCase();crRefresh()">
+  <div id="crl" style="max-height:230px;overflow:auto;margin-bottom:6px"></div>
+  <div class="mut" id="crt" style="margin-bottom:6px"></div>
+  <label>💵 Montant (= total des pièces, modifiable)</label>
+  <input id="cra" type="number" step="any" inputmode="decimal" oninput="CR.manual=true">
+  <label>📝 Note</label><input id="crn">
+  <div class="row"><button class="g" onclick="closeM()">✖️ Annuler</button><button onclick="crSave()">💾 Enregistrer</button></div></div></div>`;
+  crRefresh();
+}
+function crSave(){
+  const items=parts.filter(p=>CR.sel[p.id]>0).map(p=>({partId:p.id,name:p.name,brand:p.brand||'',qty:CR.sel[p.id],price:p.sell||0}));
+  const total=items.reduce((a,i)=>a+i.qty*i.price,0),amt=num($('#cra').value)||total;
+  if(!amt){alert('Choisissez au moins une pièce ou saisissez un montant.');return}
+  run(F().add('txs',{clientId:cur,type:'credit',amount:amt,note:$('#crn').value.trim(),items,qty:items.reduce((a,i)=>a+i.qty,0),partId:items.length===1?items[0].partId:'',date:new Date().toISOString()}));
+  items.forEach(i=>{const p=parts.find(x=>x.id===i.partId);if(p)run(F().upd('parts',i.partId,{qty:Math.max(0,(p.qty||0)-i.qty)}))});
+  closeM();
 }
 function payForm(){
   modal('Paiement reçu',[{k:'amount',l:'💵 Montant',t:'number'},{k:'note',l:'📝 Note'}],
