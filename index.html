@@ -12,7 +12,7 @@
 :root{color-scheme:light;--bg:#f4f1e8;--card:rgba(252,251,246,.88);--tx:#2b3340;--mut:#6b7280;--ac:#3b6fc4;--bd:rgba(43,51,64,.14);--red:#c9485b;--grn:#3f8f5f;--yel:#f1c75b;--blu:#6f9be0;--rd:#e07a74}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--tx);font-family:var(--ff,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif);font-size:calc(var(--fs,1)*16px);line-height:1.4;padding:env(safe-area-inset-top,0px) 0 calc(76px + env(safe-area-inset-bottom,0px))}
-header{padding:14px 16px 6px}h1{font-size:clamp(19px,6.4vw,28px);margin:0;padding:10px 12px;border:3px solid var(--hb,#000);border-radius:12px;background:var(--hbg,#fdfcf7);color:var(--htx,#111);text-align:center;white-space:nowrap;overflow:hidden;font-weight:700;font-family:'Comic Sans MS','Comic Sans','Comic Neue',cursive}.hrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+header{padding:14px 16px 6px}h1{font-size:clamp(19px,6.4vw,28px);margin:0;padding:10px 0;border:3px solid var(--hb,#000);border-radius:12px;background:linear-gradient(90deg,#f6d46f,#ee8f89,#82a8e6,#f6d46f,#ee8f89,#82a8e6,#f6d46f);background-size:200% 100%;animation:flow 6s linear infinite;color:#111;text-align:center;white-space:nowrap;overflow:hidden;font-weight:700;font-family:'Comic Sans MS','Comic Sans','Comic Neue',cursive}.hrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
 .st{font-size:calc(var(--fs,1)*12px);color:var(--mut)}
 .kpi{display:flex;gap:8px;padding:8px 16px}
 .kpi div{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;min-width:0}
@@ -62,10 +62,14 @@ nav{backdrop-filter:blur(8px)}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b1f27;--card:rgba(38,44,56,.92);--tx:#e6e9ef;--mut:#9aa4b2;--ac:#6d9be8;--bd:rgba(230,233,239,.15);--red:#f0808f;--grn:#6fcf97;--yel:#e7c35a;--blu:#6f9be0;--rd:#d96f69;--hb:#e6e9ef;--hbg:#262c38;--htx:#f3f4f6;--lbg:#2a2f3a;--tkbg:#3a2428}
 :root[data-theme="dark"] body::before{opacity:.5}
 :root[data-theme="dark"] button.fab{color:#fff}
+@keyframes flow{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes slide{from{left:-100%}to{left:100%}}
+.ttl{display:inline-block;position:relative;padding:0 12px;animation:slide 7s linear infinite}
+@media (prefers-reduced-motion:reduce){h1,.ttl{animation:none}}
 #rc{display:none}
 @media print{body>*:not(#rc){display:none!important}body{background:#fff;padding:0}#rc{display:block;font:15px/1.6 monospace;white-space:pre-wrap;padding:24px;color:#000;background:#fff}}
 </style></head><body class="out">
-<header><h1>📱 Stock & Crédits</h1><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
+<header><h1><span class="ttl">📱 Stock & Crédits</span></h1><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
 <section id="auth"><div class="card"><b>Connexion</b><br>
 <input id="em" type="email" placeholder="📧 E-mail" autocomplete="username"><input id="pw" type="password" placeholder="🔑 Mot de passe" autocomplete="current-password">
 <div class="red" id="err" style="min-height:20px"></div>
