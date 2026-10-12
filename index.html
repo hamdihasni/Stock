@@ -67,10 +67,17 @@ nav{backdrop-filter:blur(8px)}
 .ayah small{font-size:.8em;font-weight:400;opacity:.85}
 #toast{display:none;position:fixed;left:16px;right:16px;bottom:calc(125px + env(safe-area-inset-bottom,0px));z-index:8;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;background:#2b3340;color:#fff;box-shadow:0 4px 14px #0005}
 .out #toast{display:none!important}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes blinkb{0%,100%{border-color:var(--red)}50%{border-color:transparent}}
+.blink{animation:blink 1s ease-in-out infinite}
+.rp{display:none;margin-top:8px;padding:7px 12px;border-radius:10px;background:#d6293e;color:#fff;font-weight:700;cursor:pointer;animation:blink 1.2s ease-in-out infinite}
+.out .rp{display:none!important}
+.card.rupt{border:2px solid var(--red);animation:blinkb 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.blink,.rp,.card.rupt{animation:none}}
 #rc{display:none}
 @media print{body>*:not(#rc){display:none!important}body{background:#fff;padding:0}#rc{display:block;font:15px/1.6 monospace;white-space:pre-wrap;padding:24px;color:#000;background:#fff}}
 </style></head><body class="out">
-<header><h1><span class="ttl">📱 Stock & Crédits</span></h1><div class="ayah" dir="rtl" lang="ar">﴿ وَمَن يَتَّقِ اللَّـهَ يَجْعَل لَّهُ مَخْرَجًا * وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ ﴾ <small>[الطلاق: 2-3]</small></div><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
+<header><h1><span class="ttl">📱 Stock & Crédits</span></h1><div class="ayah" dir="rtl" lang="ar">﴿ وَمَن يَتَّقِ اللَّـهَ يَجْعَل لَّهُ مَخْرَجًا * وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ ﴾ <small>[الطلاق: 2-3]</small></div><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div id="rp" class="rp" onclick="tab='stock';cur=null;render()"><span id="rpt"></span></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
 <section id="auth"><div class="card"><b>Connexion</b><br>
 <input id="em" type="email" placeholder="📧 E-mail" autocomplete="username"><input id="pw" type="password" placeholder="🔑 Mot de passe" autocomplete="current-password">
 <div class="red" id="err" style="min-height:20px"></div>
@@ -171,6 +178,8 @@ function render(){
   const tkTxt=L.length?[...L].sort((a,b)=>daysLate(b.id)-daysLate(a.id)).map(c=>`${esc(c.name)} (${daysLate(c.id)} j · ${money(bal(c.id))})`).join('   •   '):'';
   if(tkTxt!==window._tkt){window._tkt=tkTxt;const t=$('#tkin');t.innerHTML=tkTxt?`${SIG} <b>Clients en retard :</b> ${tkTxt} ${SIG}`:'';t.style.animationDuration=Math.max(14,tkTxt.length*.22)+'s'}
   $('#tk').style.display=tkTxt?'block':'none';
+  const OUT=parts.filter(p=>(p.qty||0)<=0),rp=OUT.slice(0,5).map(p=>esc(p.name+(p.brand?' ('+p.brand+')':''))).join(', ')+(OUT.length>5?` … +${OUT.length-5}`:'');
+  $('#rpt').innerHTML=OUT.length?`🚨 Rupture de stock : ${rp}`:'';$('#rp').style.display=OUT.length?'block':'none';
   $('#t-stock').className=tab==='stock'?'on':'';$('#t-clients').className=tab==='clients'?'on':'';$('#t-hist').className=tab==='hist'?'on':'';$('#t-ai').className=tab==='ai'?'on':'';$('#fab').style.display=((tab==='hist'||tab==='ai')&&!cur)?'none':'';
   $('#fab').textContent=cur?'➕ Opération':tab==='stock'?'➕ Pièce'+(br&&br!=='Autre'?' '+br:''):'➕ Client';
   const lb='';
@@ -190,7 +199,7 @@ function render(){
     const chips=`<div class="chips">${['',...BRANDS,'Autre'].map(b=>`<button class="chip ${br===b?'on':''}" onclick="br='${b}';render()">${b===''?'🗂️ Tous':b==='Autre'?'🔧 Autre':'📱 '+b} ${parts.filter(p=>isBr(p,b)).length}</button>`).join('')}</div>`;
     const l=parts.filter(p=>isBr(p,br)&&(p.name+' '+(p.model||'')+' '+(p.cat||'')+' '+(p.brand||'')).toLowerCase().includes(q)).sort((x,y)=>x.name.localeCompare(y.name));
     a.innerHTML=lb+chips+`<input id="q" placeholder="🔍 Rechercher une pièce…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render();const i=$('#q');i.focus();i.setSelectionRange(99,99)">`+
-    (l.map(p=>`<div class="card"><div class="row"><div><b>${esc(p.name)}</b><div class="mut">${esc(p.brand?p.brand+' · ':'')}${esc(p.cat||'')} ${esc(p.model||'')}</div></div><span class="badge ${p.qty<=(p.min||0)?'low':''}">Qté ${p.qty||0}</span></div>
+    (l.map(p=>`<div class="card${(p.qty||0)<=0?' rupt':''}"><div class="row"><div><b>${esc(p.name)}</b><div class="mut">${esc(p.brand?p.brand+' · ':'')}${esc(p.cat||'')} ${esc(p.model||'')}</div></div>${(p.qty||0)<=0?'<span class="badge low blink">🚨 Rupture · Qté 0</span>':`<span class="badge ${p.qty<=(p.min||0)?'low':''}">Qté ${p.qty||0}</span>`}</div>
     <div class="row" style="margin-top:8px"><span class="mut">Achat ${money(p.buy)} · Vente ${money(p.sell)}</span><span><button class="g s" onclick="adj('${p.id}',-1)">−1</button> <button class="g s" onclick="adj('${p.id}',1)">+1</button> <button class="g s" onclick="partForm('${p.id}')">✏️</button></span></div></div>`).join('')||'<p class="mut">Aucune pièce. Ajoutez-en avec le bouton +.</p>');
   }else if(tab==='ai'){
     if(!AIF&&document.activeElement&&document.activeElement.id==='chi')return;
@@ -444,7 +453,7 @@ function adj(id,n){
   if(n<0){
     const sid='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     run(F().set('sales',sid,{partId:id,name:p.name,brand:p.brand||'',qty:1,price:p.sell||0,date:new Date().toISOString()}));
-    toast(`<span>🛒 1 pièce vendue : ${esc(p.name)}</span><button class="g s" style="color:#fff;border-color:#fff6" onclick="undoSale('${sid}','${id}')">↩️ Annuler</button>`);
+    toast(`<span>🛒 1 pièce vendue : ${esc(p.name)}${(p.qty||0)-1<=0?' — 🚨 rupture !':''}</span><button class="g s" style="color:#fff;border-color:#fff6" onclick="undoSale('${sid}','${id}')">↩️ Annuler</button>`);
   }
 }
 function undoSale(sid,pid){
