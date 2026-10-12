@@ -27,7 +27,7 @@ button.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}
 button.d{background:var(--red)}button.s{padding:6px 11px}
 .badge{border-radius:20px;padding:3px 10px;font-size:calc(var(--fs,1)*13px);background:var(--bd)}.badge.low{background:var(--red);color:#fff}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px}nav button.on{color:var(--ac);font-weight:600}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 2px;font-size:calc(var(--fs,1)*12.5px);white-space:nowrap}nav button.on{color:var(--ac);font-weight:600}
 .fab{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));border-radius:28px;padding:14px 20px;box-shadow:0 4px 14px #0004}
 .ov{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;justify-content:center;z-index:9}
 .md{background:var(--bg);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:16px;max-height:90%;overflow:auto}
@@ -78,7 +78,7 @@ nav{backdrop-filter:blur(8px)}
 <div class="kpi"><div><b id="k1">0</b><span>📦 Valeur du stock</span></div><div onclick="askPw('Modifier les totaux (ventes, encaissé, pièces)',editPieces)" style="cursor:pointer"><b id="k4">0</b><span id="k4l">🛒 Total ventes</span><span id="k4s"></span></div><div><b id="k2">0</b><span>💳 Crédits dus</span></div><div><b id="k3">0</b><span id="k3l">Clients en retard</span></div></div>
 <main id="app"></main>
 <button class="fab" id="fab">➕ Pièce</button>
-<nav><button id="t-stock" class="on">📦 Stock</button><button id="t-clients">👥 Clients</button><button id="t-hist">🕘 Historique</button></nav>
+<nav><button id="t-stock" class="on">📦 Stock</button><button id="t-clients">👥 Clients</button><button id="t-hist">🕘 Historique</button><button id="t-ai">🤖 Assistant</button></nav>
 <div id="ov"></div><div id="rc"></div><div id="toast"></div>
 
 <script type="module">
@@ -171,7 +171,7 @@ function render(){
   const tkTxt=L.length?[...L].sort((a,b)=>daysLate(b.id)-daysLate(a.id)).map(c=>`${esc(c.name)} (${daysLate(c.id)} j · ${money(bal(c.id))})`).join('   •   '):'';
   if(tkTxt!==window._tkt){window._tkt=tkTxt;const t=$('#tkin');t.innerHTML=tkTxt?`${SIG} <b>Clients en retard :</b> ${tkTxt} ${SIG}`:'';t.style.animationDuration=Math.max(14,tkTxt.length*.22)+'s'}
   $('#tk').style.display=tkTxt?'block':'none';
-  $('#t-stock').className=tab==='stock'?'on':'';$('#t-clients').className=tab==='clients'?'on':'';$('#t-hist').className=tab==='hist'?'on':'';$('#fab').style.display=(tab==='hist'&&!cur)?'none':'';
+  $('#t-stock').className=tab==='stock'?'on':'';$('#t-clients').className=tab==='clients'?'on':'';$('#t-hist').className=tab==='hist'?'on':'';$('#t-ai').className=tab==='ai'?'on':'';$('#fab').style.display=((tab==='hist'||tab==='ai')&&!cur)?'none':'';
   $('#fab').textContent=cur?'➕ Opération':tab==='stock'?'➕ Pièce'+(br&&br!=='Autre'?' '+br:''):'➕ Client';
   const lb='';
   const a=$('#app');
@@ -192,6 +192,13 @@ function render(){
     a.innerHTML=lb+chips+`<input id="q" placeholder="🔍 Rechercher une pièce…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render();const i=$('#q');i.focus();i.setSelectionRange(99,99)">`+
     (l.map(p=>`<div class="card"><div class="row"><div><b>${esc(p.name)}</b><div class="mut">${esc(p.brand?p.brand+' · ':'')}${esc(p.cat||'')} ${esc(p.model||'')}</div></div><span class="badge ${p.qty<=(p.min||0)?'low':''}">Qté ${p.qty||0}</span></div>
     <div class="row" style="margin-top:8px"><span class="mut">Achat ${money(p.buy)} · Vente ${money(p.sell)}</span><span><button class="g s" onclick="adj('${p.id}',-1)">−1</button> <button class="g s" onclick="adj('${p.id}',1)">+1</button> <button class="g s" onclick="partForm('${p.id}')">✏️</button></span></div></div>`).join('')||'<p class="mut">Aucune pièce. Ajoutez-en avec le bouton +.</p>');
+  }else if(tab==='ai'){
+    if(!AIF&&document.activeElement&&document.activeElement.id==='chi')return;
+    if(!CH.length)CH.push({r:'a',t:aiHello()});
+    a.innerHTML=`<div id="chm" style="max-height:calc(100vh - 420px);min-height:200px;overflow:auto;padding:4px 0">${CH.map(m=>`<div style="display:flex;justify-content:${m.r==='u'?'flex-end':'flex-start'};margin:6px 0"><div style="max-width:90%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;${m.r==='u'?'background:var(--ac);color:#fff':'background:var(--card);border:1px solid var(--bd)'}">${esc(m.t)}</div></div>`).join('')}</div>
+    <div class="chips">${AI_CHIPS.map(c=>`<button class="chip" onclick="aiSend('${c[1]}')">${c[0]}</button>`).join('')}</div>
+    <div class="row"><input id="chi" placeholder="🤖 Posez votre question…" value="${esc(chq)}" oninput="chq=this.value" onkeydown="if(event.key==='Enter')aiSend()" style="margin:0"><button onclick="aiSend()">📤</button></div>`;
+    const cm=$('#chm');cm.scrollTop=cm.scrollHeight;
   }else if(tab==='hist'){
     const ic={part:'📦 Pièce',client:'👤 Client',tx:'💰 Opération'};
     a.innerHTML=`<p class="mut">Éléments supprimés (pièces, clients, opérations). Vous pouvez les restaurer. Pour les effacer définitivement, un mot de passe est demandé (à définir dans ⚙️).</p>${trash.length?`<button class="d s" onclick="purgeAll()">🗑 Vider tout l'historique</button>`:''}`+([...trash].sort((x,y)=>y.date.localeCompare(x.date)).map(e=>`<div class="card"><b>${ic[e.kind]||''}</b> · ${esc(e.label)}${e.kind==='client'&&e.data.txs&&e.data.txs.length?` <span class="mut">(+${e.data.txs.length} opération(s))</span>`:''}<div class="mut">Supprimé le ${new Date(e.date).toLocaleString('fr-FR')}</div><div class="row" style="margin-top:8px"><button class="g s" onclick="restore('${e.id}')">↩️ Restaurer</button><button class="g s" onclick="purge('${e.id}')">🗑 Effacer définitivement</button></div></div>`).join('')||'<p class="mut">Aucune suppression.</p>');
@@ -203,6 +210,7 @@ function render(){
 $('#t-stock').onclick=()=>{tab='stock';cur=null;render()};
 $('#t-clients').onclick=()=>{tab='clients';cur=null;render()};
 $('#t-hist').onclick=()=>{tab='hist';cur=null;render()};
+$('#t-ai').onclick=()=>{tab='ai';cur=null;render()};
 $('#fab').onclick=()=>cur?creditForm():tab==='stock'?partForm():clientForm();
 
 function modal(title,fields,ok,extra='',label='💾 Enregistrer'){
@@ -232,6 +240,122 @@ function settingsForm(){
     run(F().set('settings','main',d));
   },
   '<button class="g s" onclick="exportXlsx()">📊 Excel</button> ');
+}
+let CH=[],chq='',AIF=false;
+const AI_CHIPS=[['⏰ Clients en retard','clients en retard'],['📦 Stock bas','stock bas'],['🛒 Ventes','ventes et encaisse'],['💳 Crédits','credits des clients'],['🏆 Plus vendues','pieces les plus vendues'],['❓ Ajouter une pièce','comment ajouter une piece'],['❓ Faire un crédit','comment faire un credit']];
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const has=(q,...w)=>w.some(x=>q.includes(x));
+const STOP=new Set(['les','des','une','est','sont','quel','quels','quelle','quelles','combien','mon','mes','que','qui','pour','dans','avec','piece','pieces','stock','client','clients','vente','ventes','credit','credits','reste','prix','disponible','quantite','pas','sur','aux','par','plus','cette','cet','ces','ont','fait','faire','comment']);
+const toks=q=>norm(q).split(/[^a-z0-9]+/).filter(w=>w.length>=3&&!STOP.has(w)).map(w=>w.length>3?w.replace(/s$/,''):w);
+const BRA={Galaxy:['galaxy','samsung'],Oppo:['oppo'],Redmi:['redmi','xiaomi'],Infinix:['infinix'],Huawei:['huawei']};
+const brandIn=q=>Object.keys(BRA).find(b=>has(q,...BRA[b]));
+const pn=p=>`${p.name}${p.brand?' ('+p.brand+')':''}${p.model?' '+p.model:''}`;
+function findClients(q){const T=toks(q);return clients.map(c=>({c,n:toks(c.name).filter(w=>T.includes(w)).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>x.c)}
+function findParts(q){const T=toks(q);if(!T.length)return[];return parts.map(p=>{const h=norm([p.name,p.model,p.brand,p.cat].join(' '));return{p,n:T.filter(w=>h.includes(w)).length}}).filter(x=>x.n>0).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).map(x=>x.p)}
+function aiHello(){
+  const L=late(),out=parts.filter(p=>(p.qty||0)<=0).length,low=parts.filter(p=>p.qty>0&&p.qty<=(p.min||0)).length,a=[];
+  if(L.length)a.push(`🔴 ${L.length} client(s) en retard`);if(out)a.push(`📦 ${out} pièce(s) en rupture`);if(low)a.push(`⚠️ ${low} pièce(s) à stock bas`);
+  return 'Bonjour 👋 Je suis votre assistant. '+(a.length?'Aujourd’hui :\n'+a.join('\n'):'Tout est en ordre pour le moment ✅')+'\n\nPosez-moi une question ou touchez une suggestion ci-dessous.';
+}
+function aiMenu(){return '🤖 Je peux vous aider sur :\n⏰ les clients en retard\n👤 un client (écrivez son nom)\n💳 les crédits dus\n📦 le stock : une pièce, une marque, les ruptures, la valeur\n🛒 les ventes, l’encaissé, la marge estimée, les pièces les plus vendues\n❓ le fonctionnement de l’application (ex : « comment ajouter une pièce ? »)'}
+function aiLate(){
+  const L=late().sort((a,b)=>daysLate(b.id)-daysLate(a.id));
+  if(!L.length)return `✅ Aucun client n’a dépassé son délai de paiement (délai général : ${DL()} jours).`;
+  return `🔴 ${L.length} client(s) en retard :\n`+L.map(c=>`• ${c.name} — ${daysLate(c.id)} j (délai ${DLc(c)} j) — dû ${money(bal(c.id))}${c.phone?' — 📞 '+c.phone:''}`).join('\n')+`\n\nTotal dû par ces clients : ${money(L.reduce((s,c)=>s+bal(c.id),0))}.\n💬 Ouvrez une fiche client pour envoyer un rappel.`;
+}
+function aiClient(c){
+  const b=bal(c.id),d=daysLate(c.id),l=txs.filter(t=>t.clientId===c.id).sort((x,y)=>y.date.localeCompare(x.date)),bought={};
+  l.filter(t=>t.type==='credit').forEach(t=>(t.items||[]).forEach(i=>bought[i.name]=(bought[i.name]||0)+i.qty));
+  let t=`👤 ${c.name}${c.phone?' — 📞 '+c.phone:''}\n💰 Solde : ${money(b)}`;
+  if(d!=null)t+=`\n${d>DLc(c)?'🔴 En retard':'⏳ Crédit en cours'} : impayé depuis ${d} j (délai ${DLc(c)} j)`;else if(b<=0)t+=' ✅ (soldé)';
+  const bl=Object.entries(bought).map(([n,q])=>`${n} ×${q}`).join(', ');if(bl)t+=`\n🛒 Pièces achetées : ${bl}`;
+  if(l.length)t+='\n🧾 Dernières opérations :\n'+l.slice(0,3).map(x=>`• ${new Date(x.date).toLocaleDateString('fr-FR')} — ${x.type==='credit'?'Crédit':'Paiement'} ${money(x.amount)}${txDesc(x)?' ('+txDesc(x)+')':''}`).join('\n');
+  return t;
+}
+function aiCredits(){
+  const dl=clients.filter(c=>bal(c.id)>0).sort((a,b)=>bal(b.id)-bal(a.id));
+  if(!dl.length)return '✅ Aucun client ne vous doit d’argent.';
+  return `💳 ${dl.length} client(s) vous doivent ${money(dl.reduce((s,c)=>s+bal(c.id),0))} :\n`+dl.slice(0,8).map(c=>`• ${c.name} — ${money(bal(c.id))}`).join('\n')+(dl.length>8?`\n… et ${dl.length-8} autre(s)`:'');
+}
+function aiLowStock(){
+  const out=parts.filter(p=>(p.qty||0)<=0),low=parts.filter(p=>p.qty>0&&p.qty<=(p.min||0));
+  if(!out.length&&!low.length)return '✅ Aucune pièce en rupture ni à stock bas.';
+  let t='';if(out.length)t+=`🔴 En rupture (${out.length}) :\n`+out.slice(0,12).map(p=>'• '+pn(p)).join('\n');
+  if(low.length)t+=(t?'\n\n':'')+`⚠️ Stock bas (${low.length}) :\n`+low.slice(0,12).map(p=>`• ${pn(p)} — reste ${p.qty} (seuil ${p.min||0})`).join('\n');
+  return t+'\n\n💡 Pensez à les racheter.';
+}
+function soldAgg(){const m={};sales.forEach(s=>{m[s.name]=(m[s.name]||0)+(s.qty||1)});txs.filter(t=>t.type==='credit').forEach(t=>(t.items||[]).forEach(i=>{m[i.name]=(m[i.name]||0)+i.qty}));return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+function aiTop(){const a=soldAgg();if(!a.length)return 'Pas encore de ventes enregistrées avec le détail des pièces. Utilisez −1 sur une pièce, ou un crédit avec des pièces choisies.';return '🏆 Pièces les plus vendues :\n'+a.slice(0,5).map(([n,q],i)=>`${i+1}. ${n} — ${q} vendue(s)`).join('\n')}
+function aiMargin(){
+  let m=0,n=0;const cost=id=>{const p=parts.find(x=>x.id===id);return p?(p.buy||0):null};
+  sales.forEach(s=>{const c=cost(s.partId);if(c!=null){m+=((s.price||0)-c)*(s.qty||1);n+=s.qty||1}});
+  txs.filter(t=>t.type==='credit').forEach(t=>(t.items||[]).forEach(i=>{const c=cost(i.partId);if(c!=null){m+=((i.price||0)-c)*i.qty;n+=i.qty}}));
+  if(!n)return 'Je ne peux pas encore estimer la marge : aucune vente avec une pièce du stock n’est enregistrée.';
+  return `📈 Marge estimée : ${money(m)} sur ${n} pièce(s) vendue(s) (prix de vente − prix d’achat actuel).\nC’est une estimation : elle ignore les remises et les anciens prix.`;
+}
+function aiSales(){
+  const pc=pcCalc()+(S.pcAdj||0),sv=salesCalc()+(S.saAdj||0),rv=cashCalc()+(S.enAdj||0),owed=clients.reduce((s,c)=>s+Math.max(0,bal(c.id)),0);
+  return `🛒 Total ventes : ${money(sv)}\n💵 Encaissé : ${money(rv)}\n🔧 Pièces vendues : ${fmt(pc)}\n💳 Encore dû par les clients : ${money(owed)}`+((S.saAdj||S.enAdj||S.pcAdj)?'\n✏️ Certains totaux ont été corrigés manuellement.':'');
+}
+function aiStockValue(){
+  const buy=parts.reduce((s,p)=>s+(p.qty||0)*(p.buy||0),0),sell=parts.reduce((s,p)=>s+(p.qty||0)*(p.sell||0),0),q=parts.reduce((s,p)=>s+(p.qty||0),0);
+  return `📦 Stock : ${parts.length} référence(s), ${fmt(q)} pièce(s).\n💰 Valeur à l’achat : ${money(buy)}\n💵 Valeur à la vente : ${money(sell)}\n📈 Gain potentiel : ${money(sell-buy)}`;
+}
+function aiBrand(b){
+  const l=parts.filter(p=>p.brand===b);
+  if(!l.length)return `📱 Aucune pièce ${b} enregistrée. Dans 📦 Stock, touchez ${b} puis ➕ Pièce ${b} pour en ajouter.`;
+  return `📱 ${b} : ${l.length} référence(s), ${fmt(l.reduce((s,p)=>s+(p.qty||0),0))} pièce(s) en stock, valeur ${money(l.reduce((s,p)=>s+(p.qty||0)*(p.buy||0),0))}.\n`+l.slice(0,8).map(p=>`• ${p.name}${p.model?' '+p.model:''} — qté ${p.qty||0}`).join('\n');
+}
+function aiParts(ps){return `📦 ${ps.length>6?'Les 6 premières pièces trouvées sur '+ps.length:'Pièces trouvées'} :\n`+ps.slice(0,6).map(p=>`• ${pn(p)} — qté ${p.qty||0}${(p.qty||0)<=(p.min||0)?' ⚠️':''} — achat ${money(p.buy)} / vente ${money(p.sell)}`).join('\n')}
+function aiOverview(){return aiStockValue()+'\n\nPrécisez une pièce ou une marque (ex : « écran Galaxy ») pour voir son stock.'}
+function aiHow(q){
+  if(has(q,'modifier','changer','corriger')&&has(q,'total','encaisse','pieces vendues','ventes'))return '✏️ Modifier les totaux :\n1. Touchez la carte 🛒 Total ventes en haut.\n2. Saisissez le mot de passe d’effacement.\n3. Changez les ventes, l’encaissé ou les pièces vendues, puis 💾 Enregistrer.\n↺ Auto remet le calcul automatique.';
+  if(has(q,'-1','moins 1','comptant','vendre une piece','vente rapide'))return '🛒 Vente rapide :\nDans 📦 Stock, le bouton −1 retire une pièce et enregistre une vente comptant au prix de vente. Un message ↩️ Annuler reste affiché 6 secondes si vous vous êtes trompé. Ces ventes alimentent Total ventes, Encaissé et pièces vendues.';
+  if(has(q,'mot de passe','password'))return '🔒 Mot de passe d’effacement :\n1. Touchez ⚙️.\n2. Saisissez le mot de passe (4 caractères min.) puis 💾.\nIl protège l’effacement définitif de l’historique et la modification des totaux. Pour le changer, il faut l’ancien.';
+  if(has(q,'supprim','effac','restaur','corbeille','historique'))return '🗑 Suppression et historique :\nSupprimer une pièce, un client ou une opération la place dans 🕘 Historique. ↩️ Restaurer la remet en place. « Effacer définitivement » demande le mot de passe d’effacement (à définir dans ⚙️).';
+  if(has(q,'paiement','payer','regler','encaisser','verser','versement'))return '💵 Enregistrer un paiement :\n1. 👥 Clients → touchez le client.\n2. 💵 Paiement.\n3. Saisissez le montant → 💾 Enregistrer.\nLe solde baisse. Touchez 🧾 sur l’opération pour le reçu.';
+  if(has(q,'recu'))return '🧾 Reçu :\nFiche client → 🧾 à côté de l’opération → 📤 Partager (image avec le logo) ou 🖨️ Imprimer (ou enregistrer en PDF). La phrase « Merci de régulariser dès que possible. » s’ajoute s’il reste un solde.';
+  if(has(q,'credit')&&has(q,'ajout','nouveau','creer','faire','donner','enregistr','vend'))return '💳 Enregistrer un crédit :\n1. 👥 Clients → touchez le client.\n2. 💳 Nouveau crédit.\n3. Choisissez les pièces du stock avec + et − (le montant se calcule, modifiable).\n4. 💾 Enregistrer : le stock diminue.';
+  if(has(q,'client')&&has(q,'ajout','nouveau','creer','enregistr'))return '👥 Ajouter un client :\n1. Onglet 👥 Clients.\n2. ➕ Client.\n3. Nom, téléphone et, si besoin, un ⏳ délai spécifique.\n4. 💾 Enregistrer.';
+  if(has(q,'piece')&&has(q,'ajout','nouveau','nouvelle','creer','enregistr'))return '📦 Ajouter une pièce :\n1. Onglet 📦 Stock.\n2. ➕ Pièce (si une marque est filtrée, elle est déjà choisie).\n3. Marque, nom, catégorie, modèle, quantité et prix.\n4. 💾 Enregistrer.\nAstuce : −1 / +1 ajuste le stock, et −1 compte une vente.';
+  if(has(q,'marque','galaxy','oppo','redmi','infinix','huawei')&&has(q,'comment','filtr','ajout'))return '📱 Marques :\nEn haut de 📦 Stock, touchez Galaxy, Oppo, Redmi, Infinix ou Huawei pour filtrer. ➕ Pièce Galaxy (par exemple) ajoute directement une pièce pour cette marque.';
+  if(has(q,'delai','retard')&&has(q,'comment','regler','changer','modifier','definir','choisir'))return '⏳ Délai de retard :\n• Général : ⚙️ → Délai de paiement général (7 à 90 jours).\n• Par client : ✏️ sur sa fiche → délai spécifique.\nUn client qui dépasse son délai a le signal rouge et défile dans la bande rouge sous le titre.';
+  if(has(q,'devise','monnaie','boutique'))return '💱 ⚙️ → Nom de la boutique (affiché sur les reçus) et Devise (DA, DT, € …) → 💾.';
+  if(has(q,'excel','export','xlsx'))return '📊 Export Excel :\n⚙️ → 📊 Excel. Le fichier contient Stock, Clients, Opérations et Ventes (−1). Une connexion internet est nécessaire ; Android propose d’enregistrer ou de partager.';
+  if(has(q,'sombre','dark','theme','nuit'))return '🌙 ⚙️ → Thème : Clair, Sombre ou Automatique (selon le téléphone).';
+  if(has(q,'police','taille','affichage'))return '🔤 ⚙️ → Police du texte et 🔠 Taille d’affichage (Petit à Très grand). Le réglage est propre à chaque appareil.';
+  if(has(q,'apk','installer','installation','mise a jour','mettre a jour'))return '📲 Installation : ouvrez l’application et connectez-vous avec votre e-mail. Pour la mettre à jour, remplacez le fichier index.html du dépôt GitHub, puis fermez et rouvrez l’application deux fois.';
+  if(has(q,'deconnex'))return '🚪 Le bouton Déconnexion est en haut à droite, sous le titre.';
+  if(has(q,'hors ligne','sans internet','offline'))return '📶 Les données sont sur le cloud. Hors connexion, vous pouvez consulter et saisir : tout se synchronise au retour du réseau. L’export Excel et le premier lancement demandent internet.';
+  if(has(q,'alerte','signal','bande rouge'))return '🔴 La bande rouge sous le titre liste les clients en retard (nom, jours, montant). Touchez-la pour ouvrir la liste. Un client est en retard quand son plus ancien crédit impayé dépasse son délai.';
+  return null;
+}
+function aiAnswer(t0){
+  try{
+    const q=norm(t0);
+    if(/^(bonjour|salut|salam|slm|hello|bonsoir|coucou|hi)\b/.test(q)&&q.length<20)return aiHello();
+    if(has(q,'aide','que sais','que peux','menu','fonction')&&!has(q,'comment'))return aiMenu();
+    if(has(q,'comment','how','ou est','ou puis','puis-je','puis je','ajouter','ajout','creer','nouveau','nouvelle','modifier','changer','supprimer','effacer','restaurer','installer','activer','partager','imprimer','telecharger','exporter')){const h=aiHow(q);if(h)return h}
+    if(has(q,'retard','impay','relanc'))return aiLate();
+    const cl=findClients(q);if(cl.length&&!has(q,'stock'))return cl.slice(0,2).map(aiClient).join('\n\n———\n\n');
+    if(has(q,'rupture','stock bas','faible','manque','epuis','reappro','racheter'))return aiLowStock();
+    if(has(q,'plus vendu','meilleur','populaire','best'))return aiTop();
+    if(has(q,'benefice','marge','profit','gain'))return aiMargin();
+    if(has(q,'vente','vendu','revenu','encaiss','chiffre','recette'))return aiSales();
+    if(has(q,'credit','dette','doit','dus','solde','devoir'))return aiCredits();
+    if(has(q,'valeur'))return aiStockValue();
+    const b=brandIn(q);if(b){const T=toks(q).filter(w=>!BRA[b].some(x=>x.startsWith(w)||w.startsWith(x)));const ps=parts.filter(p=>p.brand===b&&T.some(w=>norm([p.name,p.model,p.cat].join(' ')).includes(w)));return ps.length?aiParts(ps):aiBrand(b)}
+    if(has(q,'stock','quantite','reste','combien','prix','disponible','piece')){const ps=findParts(q);return ps.length?aiParts(ps):aiOverview()}
+    const h=aiHow(q);if(h)return h;
+    const ps=findParts(q);if(ps.length)return aiParts(ps);
+    return '🤔 Je n’ai pas bien compris. Vous pouvez demander par exemple :\n• Quels clients sont en retard ?\n• Combien reste-t-il d’écrans Galaxy ?\n• Quel est le total des ventes ?\n• Comment ajouter une pièce ?\nTapez « aide » pour la liste de ce que je sais faire.';
+  }catch(e){return 'Oups, une erreur est survenue : '+e.message}
+}
+function aiSend(text){
+  const el=$('#chi'),t=String(text!==undefined?text:(el?el.value:'')).trim();if(!t)return;
+  CH.push({r:'u',t});CH.push({r:'a',t:aiAnswer(t)});chq='';
+  AIF=true;render();AIF=false;
+  const i=$('#chi');if(i&&text===undefined)i.focus();
 }
 function pcCalc(){return txs.filter(t=>t.type==='credit').reduce((a,t)=>a+(t.qty||0),0)+sales.reduce((a,t)=>a+(t.qty||1),0)}
 function salesCalc(){return txs.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amount,0)+sales.reduce((a,t)=>a+(t.price||0)*(t.qty||1),0)}
