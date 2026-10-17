@@ -72,6 +72,8 @@ nav{backdrop-filter:blur(8px)}
 .blink{animation:blink 1s ease-in-out infinite}
 .rp{display:none;margin-top:8px;padding:7px 12px;border-radius:10px;background:#d6293e;color:#fff;font-weight:700;cursor:pointer;animation:blink 1.2s ease-in-out infinite}
 .out .rp{display:none!important}
+.pb{margin-top:8px;padding:7px 12px;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700;cursor:pointer}
+.out .pb{display:none!important}
 .card.rupt{border:2px solid var(--red);animation:blinkb 1s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.blink,.rp,.card.rupt{animation:none}}
 button.chip.add{border-style:dashed;color:var(--ac)}
@@ -91,7 +93,7 @@ nav button{font-size:calc(var(--fs,1)*10px)}
 [dir=rtl] input[type=email],[dir=rtl] input[type=tel],[dir=rtl] input[type=number],[dir=rtl] input[type=password]{direction:ltr;text-align:right}
 @media print{body>*:not(#rc){display:none!important}body{background:#fff;padding:0}#rc{display:block;font:15px/1.6 monospace;white-space:pre-wrap;padding:24px;color:#000;background:#fff}}
 </style></head><body class="out">
-<header><h1><span class="ttl">📱 Stock & Crédits</span></h1><div class="ayah" dir="rtl" lang="ar">﴿ وَمَن يَتَّقِ اللَّـهَ يَجْعَل لَّهُ مَخْرَجًا * وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ ﴾ <small>[الطلاق: 2-3]</small></div><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div id="rp" class="rp" onclick="tab='stock';cur=null;render()"><span id="rpt"></span></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="openNotes()">📝 Notes</button><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
+<header><h1><span class="ttl">📱 Stock & Crédits</span></h1><div class="ayah" dir="rtl" lang="ar">﴿ وَمَن يَتَّقِ اللَّـهَ يَجْعَل لَّهُ مَخْرَجًا * وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ ﴾ <small>[الطلاق: 2-3]</small></div><div id="tk" class="tk" onclick="tab='clients';cf='late';cur=null;render()"><div id="tkin" class="tkin"></div></div><div id="rp" class="rp" onclick="tab='stock';cur=null;render()"><span id="rpt"></span></div><div id="pb" class="pb" onclick="openBuy()"><span id="pbt"></span></div><div class="hrow"><div class="st" id="who"></div><div id="hb" class="row"><button class="g s" onclick="openNotes()">📝 Notes</button><button class="g s" onclick="settingsForm()">⚙️</button><button class="g s" onclick="FB.logout()">🚪 Déconnexion</button></div></div></header>
 <section id="auth"><div class="card"><b>Connexion</b><br>
 <input id="em" type="email" placeholder="📧 E-mail" autocomplete="username"><input id="pw" type="password" placeholder="🔑 Mot de passe" autocomplete="current-password">
 <div class="red" id="err" style="min-height:20px"></div>
@@ -137,7 +139,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round((+n||0)*100)/100);
 const num=v=>parseFloat(String(v).replace(',','.'))||0;
 const F=()=>window.FB;
-let uid=null,unsubs=[],parts=[],clients=[],txs=[],trash=[],sales=[],notes=[],reps=[],todo=[],S={},tab='stock',cur=null,q='',cq='',cf='all',br='';
+let uid=null,unsubs=[],parts=[],clients=[],txs=[],trash=[],sales=[],notes=[],reps=[],todo=[],buy=[],S={},tab='stock',cur=null,q='',cq='',cf='all',br='';
 const BRANDS=['Galaxy','Oppo','Redmi','Infinix','Huawei'];
 const FONTS={def:['Par défaut',"system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"],comic:['Comic',"'Comic Sans MS','Comic Neue',cursive"],round:['Arrondie',"Nunito,sans-serif"],read:['Lisible (repos des yeux)',"'Atkinson Hyperlegible',sans-serif"],serif:['Classique',"Georgia,'Times New Roman',serif"]};
 const SIZES={s:['Petit',.875],m:['Normal',1],l:['Grand',1.15],xl:['Très grand',1.3]};
@@ -222,8 +224,8 @@ const AR={
 "Export indisponible : connexion internet requise.":"التصدير غير متاح: يلزم اتصال بالإنترنت.",
 "Saisissez le nom du propriétaire.":"أدخل اسم المالك.","Saisissez le nom du téléphone.":"أدخل اسم الهاتف.",
 "Marque du téléphone":"ماركة الهاتف","Modèle (facultatif)":"الطراز (اختياري)",
-"Photo du téléphone (prise avec l’appareil photo)":"صورة الهاتف (بالكاميرا)","Photo du propriétaire (prise avec l’appareil photo)":"صورة المالك (بالكاميرا)",
-"Prendre la photo":"التقاط صورة","Nom du propriétaire":"اسم المالك","Numéro de téléphone du propriétaire":"رقم هاتف المالك",
+"Photo du téléphone (prise avec l’appareil photo)":"صورة الهاتف (بالكاميرا)","Photo du téléphone : face avant (prise avec l’appareil photo)":"صورة الهاتف: الوجه الأمامي (بالكاميرا)","Photo du téléphone : face arrière (prise avec l’appareil photo)":"صورة الهاتف: الوجه الخلفي (بالكاميرا)","Photo du propriétaire (prise avec l’appareil photo)":"صورة المالك (بالكاميرا)",
+"Prendre la photo":"التقاط صورة","Pièces à acheter":"قطع للشراء","Nom de la pièce":"اسم القطعة","Saisissez le nom de la pièce.":"أدخل اسم القطعة.","aucune — touchez pour ajouter":"لا شيء — اضغط للإضافة","Aucune pièce à acheter pour le moment.":"لا توجد قطع للشراء حاليًا.","Marque, modèle, quantité…":"الماركة، الطراز، الكمية…","Acheté":"تم الشراء","Marquer cette pièce comme achetée ?":"تحديد هذه القطعة كمشتراة؟","Supprimer cette pièce de la liste ?":"حذف هذه القطعة من القائمة؟","Enregistrer la modification":"حفظ التعديل","modifiée":"معدّلة","Nom du propriétaire":"اسم المالك","Numéro de téléphone du propriétaire":"رقم هاتف المالك",
 "Réparation effectuée (facultatif)":"الإصلاح المنجز (اختياري)","Téléphone réparé":"هاتف تم إصلاحه","Modifier la réparation":"تعديل الإصلاح",
 "Téléphone à réparer":"هاتف للإصلاح","Nom du téléphone":"اسم الهاتف","Pannes / réparations à faire":"الأعطال / الإصلاحات المطلوبة","Réparé":"تم الإصلاح"
 };
@@ -283,10 +285,10 @@ const late=()=>clients.filter(isLate);
 const run=p=>Promise.resolve(p).catch(e=>alert('Erreur : '+(e&&e.message||e)));
 
 window.onUser=u=>{
-  unsubs.forEach(f=>f());unsubs=[];parts=[];clients=[];txs=[];trash=[];sales=[];notes=[];reps=[];todo=[];$('#nv').innerHTML='';S={};cur=null;uid=u?u.uid:null;
+  unsubs.forEach(f=>f());unsubs=[];parts=[];clients=[];txs=[];trash=[];sales=[];notes=[];reps=[];todo=[];buy=[];$('#nv').innerHTML='';S={};cur=null;uid=u?u.uid:null;
   document.body.classList.toggle('out',!uid);
   $('#who').textContent=u?'👤 '+u.email:'';
-  if(u)unsubs=[F().sub('parts',v=>{parts=v;render()}),F().sub('clients',v=>{clients=v;render()}),F().sub('txs',v=>{txs=v;render()}),F().sub('settings',v=>{S=v.find(x=>x.id==='main')||{};render()}),F().sub('trash',v=>{trash=v;render()}),F().sub('sales',v=>{sales=v;render()}),F().sub('notes',v=>{notes=v;render();if($('#nl'))renderNotes()}),F().sub('repairs',v=>{reps=v;render()}),F().sub('torepair',v=>{todo=v;render()})];
+  if(u)unsubs=[F().sub('parts',v=>{parts=v;render()}),F().sub('clients',v=>{clients=v;render()}),F().sub('txs',v=>{txs=v;render()}),F().sub('settings',v=>{S=v.find(x=>x.id==='main')||{};render()}),F().sub('trash',v=>{trash=v;render()}),F().sub('sales',v=>{sales=v;render()}),F().sub('notes',v=>{notes=v;render();if($('#nl'))renderNotes()}),F().sub('repairs',v=>{reps=v;render()}),F().sub('torepair',v=>{todo=v;render()}),F().sub('tobuy',v=>{buy=v;render()})];
   render();
 };
 const MSG={'auth/invalid-credential':'E-mail ou mot de passe incorrect','auth/email-already-in-use':'Ce compte existe déjà','auth/weak-password':'Mot de passe trop court (6 caractères min.)','auth/invalid-email':'E-mail invalide','auth/network-request-failed':'Pas de connexion internet','auth/operation-not-allowed':"E-mail/Mot de passe non activé dans Firebase",'auth/unauthorized-domain':"Domaine non autorisé dans Firebase Authentication"};
@@ -310,6 +312,9 @@ function render(){
   $('#tk').style.display=tkTxt?'block':'none';
   const OUT=parts.filter(p=>(p.qty||0)<=0),rp=OUT.slice(0,5).map(p=>esc(p.name+(p.brand?' ('+p.brand+')':''))).join(', ')+(OUT.length>5?` … +${OUT.length-5}`:'');
   $('#rpt').innerHTML=OUT.length?`🚨 Rupture de stock : ${rp}`:'';$('#rp').style.display=OUT.length?'block':'none';
+  const BY=[...buy].sort((a,b)=>(a.date||'').localeCompare(b.date||'')),bt=BY.slice(0,4).map(p=>esc(p.name||'')).join(', ')+(BY.length>4?` … +${BY.length-4}`:'');
+  $('#pbt').innerHTML=BY.length?`🛒 Pièces à acheter (${BY.length}) : ${bt}`:'🛒 Pièces à acheter : aucune — touchez pour ajouter';
+  if($('#bl'))buyRender();
   $('#t-stock').className=tab==='stock'?'on':'';$('#t-clients').className=tab==='clients'?'on':'';$('#t-hist').className=tab==='hist'?'on':'';$('#t-ai').className=tab==='ai'?'on':'';$('#t-rep').className=tab==='rep'?'on':'';$('#t-todo').className=tab==='todo'?'on':'';$('#fab').style.display=((tab==='hist'||tab==='ai')&&!cur)?'none':'';
   $('#fab').textContent=cur?'➕ Opération':tab==='stock'?'➕ Pièce'+(br&&br!=='Autre'?' '+br:''):tab==='rep'?'➕ Réparation':tab==='todo'?'➕ À réparer':'➕ Client';
   const lb='';
@@ -336,12 +341,12 @@ function render(){
     const l=todo.filter(r=>norm([r.name,r.owner,r.note].join(' ')).includes(norm(tq))).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     const th=(src,ph)=>src?`<img class="thumb" src="${src}" onclick="viewImg(this.src)">`:`<div class="ph">${ph}</div>`;
     a.innerHTML=`<div class="mut" style="margin:4px 0">🛠️ ${todo.length} téléphone(s) à réparer</div><input id="tqi" placeholder="🔍 Rechercher (téléphone, propriétaire)…" value="${esc(tq)}" oninput="tq=this.value;render();const i=$('#tqi');i.focus();i.setSelectionRange(99,99)">`+
-    (l.map(r=>`<div class="card"><div style="display:flex;gap:10px"><div style="display:flex;gap:6px">${th(r.photoPhone,'📱')}${th(r.photoOwner,'👤')}</div><div style="min-width:0;flex:1"><b>📱 ${esc(r.name||'')}</b><div>👤 ${esc(r.owner||'')}</div><div class="mut">${new Date(r.date).toLocaleDateString('fr-FR')}</div></div></div>${(r.opts||[]).length?`<div class="tags">${r.opts.map(k=>`<span class="badge low">${esc(optLabel(k))}</span>`).join('')}</div>`:''}${r.note?`<div class="mut" style="white-space:pre-wrap">📝 ${esc(r.note)}</div>`:''}<div class="row" style="margin-top:8px"><button class="g s" onclick="todoDone('${r.id}')">✅ Réparé</button><button class="g s" onclick="todoForm('${r.id}')">✏️ Modifier</button></div></div>`).join('')||'<p class="mut">Aucun téléphone à réparer. Touchez ➕ À réparer.</p>');
+    (l.map(r=>`<div class="card"><div style="display:flex;gap:10px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start;max-width:134px">${th(r.photoPhone,'📱')}${th(r.photoOwner,'👤')}${r.photoPhone2?th(r.photoPhone2,'🔄'):''}</div><div style="min-width:0;flex:1"><b>📱 ${esc(r.name||'')}</b><div>👤 ${esc(r.owner||'')}</div><div class="mut">${new Date(r.date).toLocaleDateString('fr-FR')}</div></div></div>${(r.opts||[]).length?`<div class="tags">${r.opts.map(k=>`<span class="badge low">${esc(optLabel(k))}</span>`).join('')}</div>`:''}${r.note?`<div class="mut" style="white-space:pre-wrap">📝 ${esc(r.note)}</div>`:''}<div class="row" style="margin-top:8px"><button class="g s" onclick="todoDone('${r.id}')">✅ Réparé</button><button class="g s" onclick="todoForm('${r.id}')">✏️ Modifier</button></div></div>`).join('')||'<p class="mut">Aucun téléphone à réparer. Touchez ➕ À réparer.</p>');
   }else if(tab==='rep'){
     const l=reps.filter(r=>norm([r.owner,r.brand,r.model,r.tel,r.note].join(' ')).includes(norm(rq))).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     const th=(src,ph)=>src?`<img class="thumb" src="${src}" onclick="viewImg(this.src)">`:`<div class="ph">${ph}</div>`;
     a.innerHTML=`<div class="mut" style="margin:4px 0">📱 ${reps.length} téléphone(s) réparé(s)</div><input id="rqi" placeholder="🔍 Rechercher (propriétaire, marque, numéro)…" value="${esc(rq)}" oninput="rq=this.value;render();const i=$('#rqi');i.focus();i.setSelectionRange(99,99)">`+
-    (l.map(r=>`<div class="card"><div style="display:flex;gap:10px"><div style="display:flex;gap:6px">${th(r.photoPhone,'📱')}${th(r.photoOwner,'👤')}</div><div style="min-width:0;flex:1"><b>📱 ${esc(r.brand&&r.brand!=='Autre'?r.brand:'')} ${esc(r.model||'')}</b><div>👤 ${esc(r.owner||'')}</div><div><a href="tel:${esc(r.tel||'')}" style="color:var(--ac)">📞 ${esc(r.tel||'—')}</a></div>${r.note?`<div class="mut">🔧 ${esc(r.note)}</div>`:''}<div class="mut">${new Date(r.date).toLocaleDateString('fr-FR')}</div></div></div><div class="row" style="margin-top:8px"><span></span><button class="g s" onclick="repForm('${r.id}')">✏️ Modifier</button></div></div>`).join('')||'<p class="mut">Aucun téléphone réparé enregistré. Touchez ➕ Réparation.</p>');
+    (l.map(r=>`<div class="card"><div style="display:flex;gap:10px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start;max-width:134px">${th(r.photoPhone,'📱')}${th(r.photoOwner,'👤')}${r.photoPhone2?th(r.photoPhone2,'🔄'):''}</div><div style="min-width:0;flex:1"><b>📱 ${esc(r.brand&&r.brand!=='Autre'?r.brand:'')} ${esc(r.model||'')}</b><div>👤 ${esc(r.owner||'')}</div><div><a href="tel:${esc(r.tel||'')}" style="color:var(--ac)">📞 ${esc(r.tel||'—')}</a></div>${r.note?`<div class="mut">🔧 ${esc(r.note)}</div>`:''}<div class="mut">${new Date(r.date).toLocaleDateString('fr-FR')}</div></div></div><div class="row" style="margin-top:8px"><span></span><button class="g s" onclick="repForm('${r.id}')">✏️ Modifier</button></div></div>`).join('')||'<p class="mut">Aucun téléphone réparé enregistré. Touchez ➕ Réparation.</p>');
   }else if(tab==='ai'){
     if(!AIF&&document.activeElement&&document.activeElement.id==='chi')return;
     if(!CH.length)CH.push({r:'a',t:aiHello()});
@@ -529,6 +534,30 @@ function delType(i){
   if(!confirm(`Supprimer le type « ${t} » ? Ses pièces passeront dans « Autre » (elles ne sont pas supprimées).`))return;
   run(F().set('settings','main',{types:(S.types||[]).filter((_,j)=>j!==i)}));if(br===t)br='';closeM();
 }
+let BE=null;
+function openBuy(){
+  BE=null;
+  $('#ov').innerHTML=`<div class="ov"><div class="md" style="max-height:92%;display:flex;flex-direction:column"><div class="row"><b>🛒 Pièces à acheter</b><button class="g s" onclick="closeM()">✖️ Fermer</button></div>
+  <label>🔩 Nom de la pièce</label><input id="bn">
+  <label>📝 Notes</label><textarea id="bno" rows="3" placeholder="Marque, modèle, quantité…"></textarea>
+  <div class="row" style="margin:6px 0"><span></span><button id="bsv" onclick="saveBuy()">➕ Ajouter</button></div>
+  <div id="bl" style="overflow:auto;flex:1"></div></div></div>`;
+  buyRender();
+}
+function buyRender(){
+  const el=$('#bl');if(!el)return;
+  el.innerHTML=[...buy].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(p=>`<div class="card"><b>🔩 ${esc(p.name||'')}</b>${p.note?`<div class="mut" style="white-space:pre-wrap">📝 ${esc(p.note)}</div>`:''}<div class="row" style="margin-top:6px"><span class="mut">${new Date(p.date).toLocaleDateString('fr-FR')}${p.updated?' · modifiée':''}</span><span><button class="g s" onclick="buyDone('${p.id}')">✅ Acheté</button> <button class="g s" onclick="editBuy('${p.id}')">✏️</button> <button class="g s" onclick="delBuy('${p.id}')">🗑</button></span></div></div>`).join('')||'<p class="mut">Aucune pièce à acheter pour le moment.</p>';
+}
+function buyReset(){BE=null;const a=$('#bn'),b=$('#bno'),c=$('#bsv');if(a)a.value='';if(b)b.value='';if(c)c.textContent='➕ Ajouter'}
+function saveBuy(){
+  const name=$('#bn').value.trim();if(!name){alert('Saisissez le nom de la pièce.');return}
+  const note=$('#bno').value.trim(),now=new Date().toISOString();
+  if(BE)run(F().upd('tobuy',BE,{name,note,updated:now}));else run(F().add('tobuy',{name,note,date:now}));
+  buyReset();$('#bn').focus();
+}
+function editBuy(id){const p=buy.find(x=>x.id===id);if(!p)return;BE=id;$('#bn').value=p.name||'';$('#bno').value=p.note||'';$('#bsv').textContent='💾 Enregistrer la modification';$('#bn').focus()}
+function buyDone(id){if(!confirm('Marquer cette pièce comme achetée ?'))return;run(F().del('tobuy',id));if(BE===id)buyReset()}
+function delBuy(id){if(!confirm('Supprimer cette pièce de la liste ?'))return;run(F().del('tobuy',id));if(BE===id)buyReset()}
 let NE=null,REC=null;
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 function openNotes(){
@@ -584,19 +613,22 @@ function shrink(file,max=480,q=.65){return new Promise(res=>{const r=new FileRea
 function viewImg(src){$('#ov').innerHTML=`<div class="ov" onclick="closeM()"><div class="md" style="text-align:center"><img src="${src}" style="max-width:100%;border-radius:12px"><div style="margin-top:8px"><button class="g">✖️ Fermer</button></div></div></div>`}
 function repPrev(){
   const th=(src,ph)=>src?`<img class="thumb" src="${src}">`:`<div class="ph">${ph}</div>`;
-  const a=$('#rpp'),b=$('#rpo');if(a)a.innerHTML=th(RP.phone,'📱');if(b)b.innerHTML=th(RP.owner,'👤');
+  const a=$('#rpp'),b=$('#rpo'),c=$('#rpp2');if(a)a.innerHTML=th(RP.phone,'📱');if(b)b.innerHTML=th(RP.owner,'👤');if(c)c.innerHTML=th(RP.phone2,'🔄');
 }
 function pickPhoto(inp,kind){const f=inp.files&&inp.files[0];if(!f)return;shrink(f).then(d=>{RP[kind]=d;repPrev()})}
 function repForm(id){
   const r=reps.find(x=>x.id===id)||{};
-  RP={id:id||null,phone:r.photoPhone||'',owner:r.photoOwner||''};
+  RP={id:id||null,phone:r.photoPhone||'',phone2:r.photoPhone2||'',owner:r.photoOwner||''};
   const bo=[...BRANDS,'Autre'].map(b=>`<option ${b===(r.brand||'')?'selected':''}>${b}</option>`).join('');
   $('#ov').innerHTML=`<div class="ov"><div class="md"><b>${id?'✏️ Modifier la réparation':'📱 Téléphone réparé'}</b>
   <label>📱 Marque du téléphone</label><select id="rb">${bo}</select>
   <label>📟 Modèle (facultatif)</label><input id="rm" value="${esc(r.model||'')}">
-  <label>📷 Photo du téléphone (prise avec l’appareil photo)</label>
+  <label>📷 Photo du téléphone : face avant (prise avec l’appareil photo)</label>
   <div class="row" style="margin-bottom:8px"><span id="rpp"></span><button class="g s" onclick="$('#fph').click()">📷 Prendre la photo</button></div>
   <input id="fph" type="file" accept="image/*" capture="environment" hidden onchange="pickPhoto(this,'phone')">
+  <label>🔄 Photo du téléphone : face arrière (prise avec l’appareil photo)</label>
+  <div class="row" style="margin-bottom:8px"><span id="rpp2"></span><button class="g s" onclick="$('#fph2').click()">🔄 Prendre la photo</button></div>
+  <input id="fph2" type="file" accept="image/*" capture="environment" hidden onchange="pickPhoto(this,'phone2')">
   <label>👤 Nom du propriétaire</label><input id="rn" value="${esc(r.owner||'')}">
   <label>🤳 Photo du propriétaire (prise avec l’appareil photo)</label>
   <div class="row" style="margin-bottom:8px"><span id="rpo"></span><button class="g s" onclick="$('#fpo').click()">🤳 Prendre la photo</button></div>
@@ -608,7 +640,7 @@ function repForm(id){
 }
 function saveRep(){
   const owner=$('#rn').value.trim();if(!owner){alert('Saisissez le nom du propriétaire.');return}
-  const d={brand:$('#rb').value,model:$('#rm').value.trim(),owner,tel:$('#rt').value.trim(),note:$('#rno').value.trim(),photoPhone:RP.phone||'',photoOwner:RP.owner||''};
+  const d={brand:$('#rb').value,model:$('#rm').value.trim(),owner,tel:$('#rt').value.trim(),note:$('#rno').value.trim(),photoPhone:RP.phone||'',photoPhone2:RP.phone2||'',photoOwner:RP.owner||''};
   if(RP.id)run(F().upd('repairs',RP.id,d));else run(F().add('repairs',{...d,date:new Date().toISOString()}));
   closeM();
 }
@@ -618,13 +650,16 @@ const TODO_OPTS=[['lcd','LCD','الشاشة LCD'],['conn','Connecteur de charge'
 const optLabel=(k,fr)=>{const o=TODO_OPTS.find(x=>x[0]===k);return o?((UI.lang==='ar'&&!fr)?o[2]:o[1]):k};
 function todoForm(id){
   const r=todo.find(x=>x.id===id)||{};
-  RP={id:id||null,phone:r.photoPhone||'',owner:r.photoOwner||''};
+  RP={id:id||null,phone:r.photoPhone||'',phone2:r.photoPhone2||'',owner:r.photoOwner||''};
   const ch=r.opts||[];
   $('#ov').innerHTML=`<div class="ov"><div class="md"><b>${id?'✏️ Modifier':'🛠️ Téléphone à réparer'}</b>
   <label>📱 Nom du téléphone</label><input id="tn" value="${esc(r.name||'')}">
-  <label>📷 Photo du téléphone (prise avec l’appareil photo)</label>
+  <label>📷 Photo du téléphone : face avant (prise avec l’appareil photo)</label>
   <div class="row" style="margin-bottom:8px"><span id="rpp"></span><button class="g s" onclick="$('#fph').click()">📷 Prendre la photo</button></div>
   <input id="fph" type="file" accept="image/*" capture="environment" hidden onchange="pickPhoto(this,'phone')">
+  <label>🔄 Photo du téléphone : face arrière (prise avec l’appareil photo)</label>
+  <div class="row" style="margin-bottom:8px"><span id="rpp2"></span><button class="g s" onclick="$('#fph2').click()">🔄 Prendre la photo</button></div>
+  <input id="fph2" type="file" accept="image/*" capture="environment" hidden onchange="pickPhoto(this,'phone2')">
   <label>👤 Nom du propriétaire</label><input id="tow" value="${esc(r.owner||'')}">
   <label>🤳 Photo du propriétaire (prise avec l’appareil photo)</label>
   <div class="row" style="margin-bottom:8px"><span id="rpo"></span><button class="g s" onclick="$('#fpo').click()">🤳 Prendre la photo</button></div>
@@ -638,7 +673,7 @@ function todoForm(id){
 function saveTodo(){
   const name=$('#tn').value.trim(),owner=$('#tow').value.trim();
   if(!name){alert('Saisissez le nom du téléphone.');return}
-  const d={name,owner,opts:[...document.querySelectorAll('.topt:checked')].map(x=>x.value),note:$('#tno').value.trim(),photoPhone:RP.phone||'',photoOwner:RP.owner||''};
+  const d={name,owner,opts:[...document.querySelectorAll('.topt:checked')].map(x=>x.value),note:$('#tno').value.trim(),photoPhone:RP.phone||'',photoPhone2:RP.phone2||'',photoOwner:RP.owner||''};
   if(RP.id)run(F().upd('torepair',RP.id,d));else run(F().add('torepair',{...d,date:new Date().toISOString()}));
   closeM();
 }
@@ -646,7 +681,7 @@ function delTodo(id){if(confirm('Supprimer ce téléphone de la liste ?')){run(F
 function todoDone(id){
   const r=todo.find(x=>x.id===id);if(!r||!confirm('Marquer ce téléphone comme réparé ?'))return;
   const note=[(r.opts||[]).map(k=>optLabel(k,true)).join(', '),r.note].filter(Boolean).join(' — ');
-  run(F().add('repairs',{brand:'Autre',model:r.name||'',owner:r.owner||'',tel:'',note,photoPhone:r.photoPhone||'',photoOwner:r.photoOwner||'',date:new Date().toISOString()}));
+  run(F().add('repairs',{brand:'Autre',model:r.name||'',owner:r.owner||'',tel:'',note,photoPhone:r.photoPhone||'',photoPhone2:r.photoPhone2||'',photoOwner:r.photoOwner||'',date:new Date().toISOString()}));
   run(F().del('torepair',r.id));
 }
 function aiRepairs(){
